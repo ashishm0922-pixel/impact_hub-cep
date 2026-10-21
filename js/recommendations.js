@@ -18,7 +18,23 @@ const MATCH_POINTS = {
 };
 const MAX_POINTS = MATCH_POINTS.cause + MATCH_POINTS.city + MATCH_POINTS.skillMax + MATCH_POINTS.timing + MATCH_POINTS.spots + MATCH_POINTS.soon;
 
-document.addEventListener('DOMContentLoaded', initMatcher);
+document.addEventListener('DOMContentLoaded', () => {
+  renderHeroStats();
+  initMatcher();
+});
+
+// Home hero numbers come from the actual (demo) data instead of made-up totals
+function renderHeroStats() {
+  const store = window.HCStore;
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  const raised = store.getCampaigns().reduce((sum, c) => sum + (c.raised || 0), 0);
+  set('heroStatNgos', store.getNGOs().filter(n => n.verified).length);
+  set('heroStatDrives', store.getOpportunities().filter(o => store.getOpportunityAvailability(o).ok).length);
+  set('heroStatRaised', raised >= 100000 ? `₹${(raised / 100000).toFixed(1)} L` : window.HC.formatINR(raised));
+}
 
 function initMatcher() {
   const form = document.getElementById('matcherForm');

@@ -149,6 +149,18 @@ function initNavbar() {
   const mobileBtn = document.querySelector('.mobile-menu-btn');
   const navLinks = document.querySelector('.nav-links');
 
+  // On phones the header buttons are hidden, so add "My Profile" inside the menu
+  if (navLinks && document.querySelector('.nav-actions [onclick*="authModal"]')) {
+    const item = document.createElement('li');
+    item.className = 'nav-mobile-only';
+    item.innerHTML = '<button type="button" class="nav-link-button"><i class="fas fa-user-circle"></i> My Demo Profile</button>';
+    item.querySelector('button').addEventListener('click', () => {
+      navLinks.classList.remove('active');
+      window.openModal('authModal');
+    });
+    navLinks.appendChild(item);
+  }
+
   if (mobileBtn && navLinks) {
     mobileBtn.setAttribute('aria-expanded', 'false');
     mobileBtn.addEventListener('click', () => {

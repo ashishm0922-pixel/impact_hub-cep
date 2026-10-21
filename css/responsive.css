@@ -257,3 +257,45 @@
     gap: 0.6rem;
   }
 }
+
+/* v2: header fits on phones — profile buttons move into the hamburger menu */
+.nav-mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-actions .btn {
+    display: none;
+  }
+
+  .nav-mobile-only {
+    display: list-item;
+  }
+
+  .nav-links .nav-link-button {
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent-orange);
+    cursor: pointer;
+  }
+}
+
+/* v2: let grid children shrink on small screens (grid items default to min-width: auto,
+   which lets wide content such as tables or long words push the page sideways) */
+.hero-grid > *,
+.dashboard-charts-grid > *,
+.portal-layout > *,
+.calc-grid > *,
+.ai-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 2.15rem;
+  }
+}
