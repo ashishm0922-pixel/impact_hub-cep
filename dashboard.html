@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NGO Organizer Portal — HopeConnect AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span>HopeConnect<span class="ai-badge">AI</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="ngos.html">Discover NGOs</a></li>
+        <li><a href="volunteer.html">Volunteer</a></li>
+        <li><a href="campaigns.html">Campaigns</a></li>
+        <li><a href="impact.html">Impact</a></li>
+        <li><a href="dashboard.html" class="active">Organizer Portal</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <span style="font-size: 0.85rem; font-weight: 600; color: var(--accent-green);">
+          <i class="fas fa-check-circle"></i> Verified Organizer
+        </span>
+        <button class="btn btn-sm btn-primary" onclick="openModal('createCampaignModal')">
+          <i class="fas fa-plus-circle"></i> Create Campaign
+        </button>
+        <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Organizer Portal Main Layout -->
+  <div class="portal-layout" id="organizerDashboard">
+    
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+      <div class="portal-org-summary">
+        <div class="portal-org-avatar"><i class="fas fa-leaf" style="color: #FFFFFF;"></i></div>
+        <div>
+          <strong style="font-size: 0.95rem; display: block;">Green Earth Foundation</strong>
+          <span style="font-size: 0.78rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> Pune, India</span>
+        </div>
+      </div>
+
+      <ul class="portal-menu">
+        <li class="portal-menu-item"><a href="#overview" class="active"><i class="fas fa-th-large"></i> Overview</a></li>
+        <li class="portal-menu-item"><a href="#campaigns"><i class="fas fa-bullhorn"></i> My Campaigns</a></li>
+        <li class="portal-menu-item"><a href="#volunteers"><i class="fas fa-users"></i> Volunteers</a></li>
+        <li class="portal-menu-item"><a href="#donations"><i class="fas fa-hand-holding-usd"></i> Donations</a></li>
+        <li class="portal-menu-item"><a href="#events"><i class="fas fa-calendar-alt"></i> Events & Drives</a></li>
+        <li class="portal-menu-item"><a href="#analytics"><i class="fas fa-chart-line"></i> Impact Analytics</a></li>
+        <li class="portal-menu-item"><a href="#settings"><i class="fas fa-cog"></i> Settings</a></li>
+      </ul>
+
+      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+        <a href="index.html" class="btn btn-sm btn-outline" style="width: 100%;">
+          <i class="fas fa-arrow-left"></i> Public Portal
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="portal-content-area">
+      
+      <!-- Top Bar -->
+      <div class="portal-top-bar">
+        <div>
+          <h2>Organizer Overview</h2>
+          <p>Manage your social campaigns, review volunteer applicants, and track donation progress.</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="openModal('createCampaignModal')">
+            <i class="fas fa-plus"></i> New Campaign
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="stats-overview-grid">
+        <div class="stat-metric-card">
+          <div class="stat-icon-square" style="background: var(--accent-gold-light); color: #B38600;">
+            <i class="fas fa-bullhorn"></i>
+          </div>
+          <div>
+            <div class="stat-number" id="orgActiveCampaigns">8</div>
+            <div class="stat-label">Active Campaigns</div>
+          </div>
+        </div>
+
+        <div class="stat-metric-card">
+          <div class="stat-icon-square" style="background: var(--accent-blue-light); color: var(--accent-blue);">
+            <i class="fas fa-users"></i>
+          </div>
+          <div>
+            <div class="stat-number" id="orgRegisteredVolunteers">245</div>
+            <div class="stat-label">Registered Volunteers</div>
+          </div>
+        </div>
+
+        <div class="stat-metric-card">
+          <div class="stat-icon-square" style="background: var(--accent-green-light); color: var(--accent-green);">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div>
+            <div class="stat-number" id="orgFundsRaised">₹3,50,000</div>
+            <div class="stat-label">Funds Raised</div>
+          </div>
+        </div>
+
+        <div class="stat-metric-card">
+          <div class="stat-icon-square" style="background: var(--accent-orange-light); color: var(--accent-orange);">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <div>
+            <div class="stat-number">78%</div>
+            <div class="stat-label">Tasks Completed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Campaigns Management Table -->
+      <div class="data-table-container" id="campaigns">
+        <div class="data-table-header">
+          <h3><i class="fas fa-bullhorn" style="color: var(--accent-orange);"></i> Managed Campaigns & Progress</h3>
+          <button class="btn btn-sm btn-primary" onclick="openModal('createCampaignModal')">
+            <i class="fas fa-plus"></i> Create
+          </button>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Campaign Details</th>
+              <th>Funds Raised / Goal</th>
+              <th>Progress</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="orgCampaignsTableBody">
+            <!-- Rendered by dashboard.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recent Volunteer Registrations Table -->
+      <div class="data-table-container" id="volunteers">
+        <div class="data-table-header">
+          <h3><i class="fas fa-users" style="color: var(--accent-blue);"></i> Volunteer Applicants & Rosters</h3>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Real-time Registrations</span>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Volunteer Applicant</th>
+              <th>Assigned Opportunity</th>
+              <th>Skills & Interests</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="orgVolunteersTableBody">
+            <!-- Rendered by dashboard.js -->
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Create Campaign Modal -->
+  <div class="modal-backdrop" id="createCampaignModal">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-bullhorn" style="color: var(--accent-orange);"></i> Create New Social Campaign</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="createCampaignForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Campaign Title *</label>
+            <input type="text" class="form-control" id="newCampTitle" placeholder="e.g. Rural Solar Light Installation in 5 Villages" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label>Category *</label>
+              <select class="form-control" id="newCampCategory" required>
+                <option value="Environment">Environment</option>
+                <option value="Education">Education</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Animal Welfare">Animal Welfare</option>
+                <option value="Women Empowerment">Women Empowerment</option>
+                <option value="Child Welfare">Child Welfare</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fundraising Goal (₹) *</label>
+              <input type="number" class="form-control" id="newCampGoal" placeholder="75000" min="1000" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Location / City *</label>
+            <input type="text" class="form-control" id="newCampLocation" placeholder="e.g. Pune & Satara District" required>
+          </div>
+
+          <div class="form-group">
+            <label>Campaign Cover Image URL (Optional)</label>
+            <input type="url" class="form-control" id="newCampImage" placeholder="https://images.unsplash.com/photo-...">
+          </div>
+
+          <div class="form-group">
+            <label>Detailed Description *</label>
+            <textarea class="form-control" id="newCampDescription" placeholder="Explain the community challenge, beneficiaries, and milestones..." rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('createCampaignModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Publish Campaign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
