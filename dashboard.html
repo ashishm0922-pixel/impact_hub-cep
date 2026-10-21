@@ -145,6 +145,7 @@
             <i class="fas fa-plus"></i> Create
           </button>
         </div>
+        <div class="table-scroll">
         <table class="custom-table">
           <thead>
             <tr>
@@ -158,6 +159,7 @@
             <!-- Rendered by dashboard.js -->
           </tbody>
         </table>
+        </div>
       </div>
 
       <!-- Recent Volunteer Registrations Table -->
@@ -166,6 +168,7 @@
           <h3><i class="fas fa-users" style="color: var(--accent-blue);"></i> Volunteer Applicants & Rosters</h3>
           <span style="font-size: 0.85rem; color: var(--text-muted);">Real-time Registrations</span>
         </div>
+        <div class="table-scroll">
         <table class="custom-table">
           <thead>
             <tr>
@@ -179,6 +182,7 @@
             <!-- Rendered by dashboard.js -->
           </tbody>
         </table>
+        </div>
       </div>
 
     </main>
@@ -198,7 +202,7 @@
             <input type="text" class="form-control" id="newCampTitle" placeholder="e.g. Rural Solar Light Installation in 5 Villages" required>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
               <label>Category *</label>
               <select class="form-control" id="newCampCategory" required>

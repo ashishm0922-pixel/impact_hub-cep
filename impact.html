@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/style.css">
@@ -37,6 +37,7 @@
         <li><a href="campaigns.html">Campaigns</a></li>
         <li><a href="impact.html" class="active">Impact</a></li>
         <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
       </ul>
 
       <div class="nav-actions">
@@ -165,13 +166,14 @@
       </div>
 
       <!-- Activity Tables Row -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 4rem;">
+      <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 4rem;">
         <!-- Volunteering History -->
         <div class="data-table-container">
           <div class="data-table-header">
             <h3><i class="fas fa-hands-helping" style="color: var(--accent-orange);"></i> Volunteering History</h3>
             <a href="volunteer.html" class="btn btn-sm btn-outline">Join More</a>
           </div>
+          <div class="table-scroll">
           <table class="custom-table">
             <thead>
               <tr>
@@ -186,6 +188,7 @@
             </tbody>
           </table>
         </div>
+        </div>
 
         <!-- Donation History -->
         <div class="data-table-container">
@@ -193,6 +196,7 @@
             <h3><i class="fas fa-receipt" style="color: var(--accent-green);"></i> Contribution History</h3>
             <a href="campaigns.html" class="btn btn-sm btn-outline">Donate</a>
           </div>
+          <div class="table-scroll">
           <table class="custom-table">
             <thead>
               <tr>
@@ -206,6 +210,7 @@
               <!-- Rendered via JS -->
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 

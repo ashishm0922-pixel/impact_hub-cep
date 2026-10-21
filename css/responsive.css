@@ -199,3 +199,26 @@
     width: 100%;
   }
 }
+
+/* v2: layouts that used inline grid styles collapse to one column on mobile */
+@media (max-width: 768px) {
+  .stack-mobile {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .stack-mobile > [style*="fa-arrow-right"],
+  .stack-mobile .flow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .demo-notice {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .data-table-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}

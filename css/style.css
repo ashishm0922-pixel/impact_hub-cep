@@ -1972,3 +1972,220 @@ textarea.form-control {
   font-size: 0.85rem;
   color: var(--text-light);
 }
+
+/* ==========================================================================
+   v2 additions: validation, demo labelling, status pills, matcher, tables
+   ========================================================================== */
+
+/* Form validation */
+.form-control.is-invalid {
+  border-color: #D9534F;
+  background: #FFF6F5;
+}
+
+.field-error {
+  color: #C0392B;
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+  min-height: 0;
+}
+
+.field-error:empty {
+  display: none;
+}
+
+.form-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.toast.error { border-left: 4px solid #D9534F; }
+.toast.error .toast-icon { color: #D9534F; }
+
+/* Honest "this is a demo" labelling */
+.demo-callout {
+  background: var(--accent-blue-light);
+  border: 1px solid #CFE0F8;
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.demo-callout i {
+  color: var(--accent-blue);
+  margin-right: 0.25rem;
+}
+
+.demo-callout.warning {
+  background: var(--accent-orange-light);
+  border-color: #F8D5C2;
+}
+
+.demo-callout.warning i {
+  color: var(--accent-orange);
+}
+
+.demo-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.demo-tag {
+  display: inline-block;
+  background: var(--accent-orange-light);
+  color: var(--accent-orange-hover);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  vertical-align: middle;
+}
+
+/* Extra status pills */
+.badge-status-pill.pending {
+  background: var(--accent-gold-light);
+  color: #8C6A12;
+}
+
+.badge-status-pill.closed {
+  background: #FBE9E7;
+  color: #B5452B;
+}
+
+.badge-status-pill.info {
+  background: var(--accent-blue-light);
+  color: var(--accent-blue);
+}
+
+/* Badge progress bar */
+.badge-progress {
+  width: 100%;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.badge-progress .progress-track {
+  margin: 0.3rem 0 0 0;
+  height: 6px;
+}
+
+/* Disabled buttons */
+.btn[disabled],
+.btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Tables scroll sideways on small screens instead of breaking the layout */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-xs {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+/* Smart matcher form */
+.matcher-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.matcher-form .form-group {
+  margin-bottom: 0;
+}
+
+.matcher-form label {
+  font-size: 0.85rem;
+}
+
+.match-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-green);
+  background: var(--accent-green-light);
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+}
+
+.match-reasons {
+  list-style: none;
+  margin: 0.4rem 0 0.6rem 0;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.match-reasons li::before {
+  content: '✓ ';
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+/* Donation receipt */
+.receipt-box {
+  background: var(--bg-primary);
+  border: 1px dashed var(--accent-gold);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.receipt-box dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+.receipt-box dt {
+  color: var(--text-muted);
+}
+
+.receipt-box dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Organizer portal sections */
+.portal-section {
+  scroll-margin-top: 90px;
+}
+
+.org-switcher {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
