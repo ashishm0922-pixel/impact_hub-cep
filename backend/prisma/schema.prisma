@@ -1,0 +1,206 @@
+// HopeConnect AI — initial database schema (PostgreSQL)
+// Mirrors the records the frontend demo keeps in localStorage (js/store.js),
+// so the frontend can later switch from localStorage to this API.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VOLUNTEER
+  DONOR
+  NGO_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum Category {
+  ENVIRONMENT
+  EDUCATION
+  HEALTHCARE
+  ANIMAL_WELFARE
+  WOMEN_EMPOWERMENT
+  CHILD_WELFARE
+  DISASTER_RELIEF
+}
+
+enum NgoStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum Availability {
+  WEEKENDS
+  WEEKDAYS
+  WEEKDAY_EVENINGS
+  FLEXIBLE
+}
+
+enum OpportunityStatus {
+  OPEN
+  CLOSED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  ATTENDED
+  NO_SHOW
+  CANCELLED
+}
+
+enum CampaignStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum PaymentStatus {
+  PENDING   // order created with payment provider, not yet paid
+  SUCCEEDED // confirmed by the provider's webhook — never by the browser
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  // Store only a hash (e.g. bcrypt/argon2) — never a plain password.
+  passwordHash String?
+  role         Role     @default(VOLUNTEER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ngoMemberships Ngo[]          @relation("NgoAdmins")
+  registrations  Registration[]
+  donations      Donation[]
+}
+
+model Ngo {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  category    Category
+  location    String
+  email       String
+  website     String?
+  description String
+  foundedYear Int?
+  logoUrl     String?
+  bannerUrl   String?
+  status      NgoStatus @default(PENDING_VERIFICATION)
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  admins        User[]        @relation("NgoAdmins")
+  opportunities Opportunity[]
+  campaigns     Campaign[]
+
+  @@index([category])
+  @@index([status])
+}
+
+model Opportunity {
+  id               String            @id @default(cuid())
+  ngoId            String
+  title            String
+  description      String
+  category         Category
+  city             String
+  location         String
+  date             DateTime          @db.Date
+  recurring        String?
+  availability     Availability      @default(FLEXIBLE)
+  hours            Int
+  volunteersNeeded Int
+  skills           String[]
+  remote           Boolean           @default(false)
+  imageUrl         String?
+  status           OpportunityStatus @default(OPEN)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  ngo           Ngo            @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+
+  @@index([category, date])
+  @@index([city])
+}
+
+model Registration {
+  id            String             @id @default(cuid())
+  opportunityId String
+  userId        String?
+  name          String
+  email         String
+  phone         String
+  skills        String?
+  availability  Availability       @default(FLEXIBLE)
+  status        RegistrationStatus @default(REGISTERED)
+  hours         Int // copied from the opportunity when registering
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // One registration row per email per opportunity (re-activate a cancelled one instead of inserting)
+  @@unique([opportunityId, email])
+  @@index([email])
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  ngoId       String
+  title       String
+  description String
+  category    Category
+  location    String
+  goalPaise   Int // money is stored in paise (integer) to avoid rounding errors
+  endDate     DateTime       @db.Date
+  imageUrl    String?
+  featured    Boolean        @default(false)
+  status      CampaignStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  ngo       Ngo        @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  donations Donation[]
+
+  @@index([category])
+}
+
+model Donation {
+  id                String        @id @default(cuid())
+  campaignId        String
+  userId            String?
+  donorName         String
+  donorEmail        String
+  amountPaise       Int
+  status            PaymentStatus @default(PENDING)
+  provider          String? // e.g. "razorpay"
+  providerOrderId   String?       @unique
+  providerPaymentId String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, status])
+  @@index([donorEmail])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+}
