@@ -55,7 +55,7 @@
     <div class="container">
       <div class="hero-grid">
         <div class="hero-content">
-          <div class="section-badge"><i class="fas fa-sparkles"></i> AI-Powered Social Impact Ecosystem</div>
+          <div class="section-badge"><i class="fas fa-hands-helping"></i> Smart Social Impact Ecosystem</div>
           <h1>One Platform.<br>Many Changemakers.<br><span class="highlight-text">Real Impact.</span></h1>
           <p class="hero-subheading">
             Discover trusted NGOs, volunteer for meaningful causes, support verified campaigns, and transparently track the real-world change you create.
@@ -230,38 +230,67 @@
     <div class="container">
       <div class="ai-section-box">
         <div class="section-header" style="margin-bottom: 2.5rem;">
-          <div class="section-badge"><i class="fas fa-robot"></i> Intelligent Cause Matchmaker</div>
-          <h2>Meet HopeConnect AI ✨</h2>
-          <p>Tell our smart assistant what matters to you and get personalized, real-time recommendations for matching drives and verified NGOs.</p>
+          <div class="section-badge"><i class="fas fa-compass"></i> Smart Cause Matcher</div>
+          <h2>Find Your Best-Fit Volunteer Drive</h2>
+          <p>Share your causes, city, skills and free time. We rank open opportunities with a transparent scoring system and explain every match.</p>
         </div>
 
         <div class="ai-grid">
-          <!-- Interactive Chat Window -->
+          <!-- Preference form (rule-based matcher) -->
           <div class="ai-chat-window">
             <div class="ai-message">
-              <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+              <div class="ai-avatar"><i class="fas fa-sliders-h"></i></div>
               <div class="ai-bubble" id="aiResponseText">
-                Hi! I’m <strong>HopeConnect AI</strong>. What kind of social causes are you most passionate about? Choose below to discover tailored opportunities:
+                Tell me what you care about, where you are and when you're free. I'll rank open volunteer drives and show <strong>why</strong> each one matches.
               </div>
             </div>
-
-            <div>
-              <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">Select your interest:</div>
-              <div class="ai-quick-options">
-                <button class="ai-chip-btn selected" data-cause="Environment">🌳 Environment</button>
-                <button class="ai-chip-btn" data-cause="Education">📚 Education</button>
-                <button class="ai-chip-btn" data-cause="Healthcare">🩺 Healthcare</button>
-                <button class="ai-chip-btn" data-cause="Animal Welfare">🐶 Animal Welfare</button>
-                <button class="ai-chip-btn" data-cause="Women Empowerment">👩 Women Empowerment</button>
-                <button class="ai-chip-btn" data-cause="Child Welfare">👶 Child Welfare</button>
+            <form id="matcherForm" class="matcher-form" novalidate>
+              <div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Causes you care about (pick any)</div>
+                <div class="ai-quick-options" id="matcherCauses">
+                  <button type="button" class="ai-chip-btn" data-cause="Environment" aria-pressed="false">🌳 Environment</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Education" aria-pressed="false">📚 Education</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Healthcare" aria-pressed="false">🩺 Healthcare</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Animal Welfare" aria-pressed="false">🐶 Animal Welfare</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Women Empowerment" aria-pressed="false">👩 Women Empowerment</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Child Welfare" aria-pressed="false">👶 Child Welfare</button>
+                  <button type="button" class="ai-chip-btn" data-cause="Disaster Relief" aria-pressed="false">🆘 Disaster Relief</button>
+                </div>
               </div>
-            </div>
+              <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem;">
+                <div class="form-group">
+                  <label for="matcherCity">Your city</label>
+                  <input type="text" class="form-control" id="matcherCity" maxlength="40" placeholder="e.g. Pune">
+                </div>
+                <div class="form-group">
+                  <label for="matcherAvailability">When are you free?</label>
+                  <select class="form-control" id="matcherAvailability">
+                    <option value="Flexible">Flexible / any time</option>
+                    <option value="Weekends">Weekends</option>
+                    <option value="Weekdays">Weekdays</option>
+                    <option value="Weekday Evenings">Weekday Evenings</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="matcherSkills">Your skills (comma separated)</label>
+                <input type="text" class="form-control" id="matcherSkills" maxlength="150" placeholder="e.g. teaching, photography, first aid">
+              </div>
+              <label style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="matcherRemote"> I'm open to remote / online volunteering
+              </label>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Find My Matches</button>
+              <p class="form-hint" style="margin: 0;">
+                <i class="fas fa-info-circle"></i> How it works: a transparent points system (cause +40, city +25, skills up to +20, timing +15, remote +15, spots/urgency +10).
+                No machine-learning model is used yet. Your preferences are saved in this browser only.
+              </p>
+            </form>
           </div>
 
           <!-- Dynamic Recommendations List -->
           <div>
             <h4 style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
-              <span>Recommended For You</span>
+              <span>Your Top Matches</span>
               <a href="volunteer.html" style="font-size: 0.85rem; color: var(--accent-orange); font-weight: 600;">View All <i class="fas fa-arrow-right"></i></a>
             </h4>
             <div class="ai-recs-container" id="aiRecsContainer">
