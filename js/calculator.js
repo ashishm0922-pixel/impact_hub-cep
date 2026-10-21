@@ -74,8 +74,10 @@ function initImpactCalculator() {
 
     if (calcDonateBtn) {
       calcDonateBtn.onclick = () => {
+        // On campaigns.html the donation modal exists (user picks the campaign there).
+        // On other pages, go to campaigns.html with the amount pre-filled.
         if (typeof window.openDonationModal === 'function') {
-          window.openDonationModal('camp-1', amount);
+          window.openDonationModal(null, amount);
         } else {
           window.location.href = `campaigns.html?donateAmount=${amount}`;
         }

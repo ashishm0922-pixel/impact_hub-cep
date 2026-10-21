@@ -78,28 +78,30 @@
           </div>
 
           <!-- General Contact Form -->
-          <form id="generalContactForm">
+          <form id="generalContactForm" novalidate>
             <h3 style="margin-bottom: 0.5rem;">Send Us a Message</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">We usually reply within 24 business hours.</p>
-
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input type="text" class="form-control" placeholder="Aarav Sharma" required>
+            <div class="demo-callout">
+              <i class="fas fa-info-circle"></i> Email delivery is not connected yet. Messages are saved in this browser only.
             </div>
 
             <div class="form-group">
-              <label>Email Address *</label>
-              <input type="email" class="form-control" placeholder="aarav@example.com" required>
+              <label for="contactName">Full Name *</label>
+              <input type="text" class="form-control" id="contactName" autocomplete="name" placeholder="Your name">
             </div>
 
             <div class="form-group">
-              <label>Subject</label>
-              <input type="text" class="form-control" placeholder="Partnership inquiry, volunteer query...">
+              <label for="contactEmail">Email Address *</label>
+              <input type="email" class="form-control" id="contactEmail" autocomplete="email" placeholder="name@example.com">
             </div>
 
             <div class="form-group">
-              <label>Message *</label>
-              <textarea class="form-control" rows="4" placeholder="How can we help your social impact journey?" required></textarea>
+              <label for="contactSubject">Subject</label>
+              <input type="text" class="form-control" id="contactSubject" maxlength="120" placeholder="Partnership inquiry, volunteer query...">
+            </div>
+
+            <div class="form-group">
+              <label for="contactMessage">Message *</label>
+              <textarea class="form-control" id="contactMessage" rows="4" maxlength="2000" placeholder="How can we help your social impact journey?"></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -108,41 +110,57 @@
           </form>
 
           <!-- NGO Onboarding Form (Hidden by default) -->
-          <form id="ngoRegisterForm" style="display: none;">
+          <form id="ngoRegisterForm" novalidate hidden>
             <h3 style="margin-bottom: 0.5rem;">Register Your NGO</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">Join 150+ verified organizations on HopeConnect AI.</p>
+            <div class="demo-callout">
+              <i class="fas fa-info-circle"></i> New NGOs are listed as <strong>Pending Verification</strong>.
+              In the full platform, our team would check registration and 80G/12A documents before granting the verified badge.
+            </div>
 
             <div class="form-group">
-              <label>Organization Name *</label>
-              <input type="text" class="form-control" id="regNgoName" placeholder="e.g. Pune River Revitalization Trust" required>
+              <label for="regNgoName">Organization Name *</label>
+              <input type="text" class="form-control" id="regNgoName" maxlength="80" placeholder="e.g. Pune River Revitalization Trust">
             </div>
 
             <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div class="form-group">
-                <label>Primary Cause Category *</label>
-                <select class="form-control" id="regNgoCategory" required>
+                <label for="regNgoCategory">Primary Cause Category *</label>
+                <select class="form-control" id="regNgoCategory">
+                  <option value="">Select a cause</option>
                   <option value="Environment">Environment</option>
                   <option value="Education">Education</option>
                   <option value="Healthcare">Healthcare</option>
                   <option value="Animal Welfare">Animal Welfare</option>
                   <option value="Women Empowerment">Women Empowerment</option>
                   <option value="Child Welfare">Child Welfare</option>
+                  <option value="Disaster Relief">Disaster Relief</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Location (City/State) *</label>
-                <input type="text" class="form-control" id="regNgoLocation" placeholder="e.g. Pune, Maharashtra" required>
+                <label for="regNgoLocation">Location (City, State) *</label>
+                <input type="text" class="form-control" id="regNgoLocation" maxlength="80" placeholder="e.g. Pune, Maharashtra">
+              </div>
+            </div>
+
+            <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label for="regNgoEmail">Official Email *</label>
+                <input type="email" class="form-control" id="regNgoEmail" placeholder="contact@ngo.org">
+              </div>
+              <div class="form-group">
+                <label for="regNgoYear">Year Founded *</label>
+                <input type="number" class="form-control" id="regNgoYear" placeholder="e.g. 2018" inputmode="numeric">
               </div>
             </div>
 
             <div class="form-group">
-              <label>Official Email *</label>
-              <input type="email" class="form-control" id="regNgoEmail" placeholder="contact@ngo.org" required>
+              <label for="regNgoWebsite">Website (optional)</label>
+              <input type="url" class="form-control" id="regNgoWebsite" placeholder="https://your-ngo.org">
             </div>
 
             <div class="form-group">
-              <label>Brief Description & Mission *</label>
-              <textarea class="form-control" id="regNgoDesc" rows="3" placeholder="Tell us about your community programs, past achievements, and volunteer needs..." required></textarea>
+              <label for="regNgoDesc">Brief Description & Mission *</label>
+              <textarea class="form-control" id="regNgoDesc" rows="3" maxlength="600" placeholder="Tell us about your community programs, past achievements, and volunteer needs (at least 40 characters)..."></textarea>
             </div>
 
             <button type="submit" class="btn btn-green" style="width: 100%;">
@@ -209,68 +227,6 @@
   <!-- Scripts -->
   <script src="js/store.js"></script>
   <script src="js/app.js"></script>
-  <script>
-    function switchFormTab(type) {
-      const generalForm = document.getElementById('generalContactForm');
-      const ngoForm = document.getElementById('ngoRegisterForm');
-      const tabGeneralBtn = document.getElementById('tabGeneralBtn');
-      const tabNgoBtn = document.getElementById('tabNgoBtn');
-
-      if (type === 'general') {
-        generalForm.style.display = 'block';
-        ngoForm.style.display = 'none';
-        tabGeneralBtn.className = 'btn btn-sm btn-primary';
-        tabNgoBtn.className = 'btn btn-sm btn-outline';
-      } else {
-        generalForm.style.display = 'none';
-        ngoForm.style.display = 'block';
-        tabGeneralBtn.className = 'btn btn-sm btn-outline';
-        tabNgoBtn.className = 'btn btn-sm btn-primary';
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const generalForm = document.getElementById('generalContactForm');
-      const ngoForm = document.getElementById('ngoRegisterForm');
-
-      if (generalForm) {
-        generalForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          window.showToast('Thank you! Your message has been received.', 'success', 'fas fa-paper-plane');
-          generalForm.reset();
-        });
-      }
-
-      if (ngoForm) {
-        ngoForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const name = document.getElementById('regNgoName').value.trim();
-          const category = document.getElementById('regNgoCategory').value;
-          const location = document.getElementById('regNgoLocation').value.trim();
-          const desc = document.getElementById('regNgoDesc').value.trim();
-
-          const newNgo = window.HCStore.addNGO({
-            name,
-            category,
-            location,
-            description: desc,
-            verified: true,
-            logo: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&auto=format&fit=crop&q=80',
-            banner: 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop&q=80',
-            volunteersCount: 1,
-            activeCampaignsCount: 0,
-            foundedYear: 2026,
-            rating: 5.0
-          });
-
-          window.showToast(`🎉 Congratulations! "${newNgo.name}" has been registered and added to Discovery!`, 'success', 'fas fa-check-double');
-          ngoForm.reset();
-          setTimeout(() => {
-            window.location.href = 'ngos.html';
-          }, 1200);
-        });
-      }
-    });
-  </script>
+  <script src="js/contact.js"></script>
 </body>
 </html>
