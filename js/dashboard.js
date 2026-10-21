@@ -1,10 +1,19 @@
 /**
- * HopeConnect AI - Dashboards & Analytics Manager (User Impact & NGO Organizer)
+ * HopeConnect AI - Dashboards
+ *  1. User Impact Dashboard (impact.html)  — every number is calculated from your records
+ *  2. Organizer Portal (dashboard.html)    — create/manage campaigns & drives, mark attendance
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('userImpactDashboard')) {
     initUserImpactDashboard();
+    // Re-render if the user edits their demo profile (different email = different activity)
+    document.addEventListener('hc:profile-changed', () => {
+      renderUserStats();
+      renderUserBadges();
+      renderImpactCharts();
+      renderUserActivityTables();
+    });
   }
 
   if (document.getElementById('organizerDashboard')) {
@@ -13,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ==========================================================================
-   User Impact Dashboard Logic
+   1. User Impact Dashboard
    ========================================================================== */
 function initUserImpactDashboard() {
   renderUserStats();
@@ -24,80 +33,80 @@ function initUserImpactDashboard() {
 
 function renderUserStats() {
   const stats = window.HCStore.getUserStats();
-  const badges = window.HCStore.getUserBadges();
-  const unlockedCount = badges.filter(b => b.unlocked).length;
+  const unlocked = window.HCStore.getUserBadges().filter(b => b.unlocked).length;
+  const profile = window.HCStore.getProfile();
 
-  const statCampaigns = document.getElementById('statCampaignsSupported');
-  const statHours = document.getElementById('statVolunteerHours');
-  const statDonated = document.getElementById('statTotalContributed');
-  const statBadges = document.getElementById('statBadgesEarned');
-
-  if (statCampaigns) statCampaigns.textContent = stats.campaignsSupported;
-  if (statHours) statHours.textContent = `${stats.volunteerHours} hrs`;
-  if (statDonated) statDonated.textContent = `₹${stats.totalContributed.toLocaleString('en-IN')}`;
-  if (statBadges) statBadges.textContent = unlockedCount;
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  set('statCampaignsSupported', stats.campaignsSupported);
+  set('statVolunteerHours', `${stats.volunteerHours} hrs`);
+  set('statTotalContributed', window.HC.formatINR(stats.totalContributed));
+  set('statBadgesEarned', unlocked);
+  set('statUpcomingNote', stats.eventsUpcoming
+    ? `+${stats.upcomingHours} hrs pending from ${stats.eventsUpcoming} upcoming event${stats.eventsUpcoming > 1 ? 's' : ''}`
+    : 'Hours count after attendance is confirmed');
+  set('impactProfileName', profile.name);
 }
 
 function renderUserBadges() {
-  const badgesContainer = document.getElementById('badgesGridContainer');
-  if (!badgesContainer) return;
+  const container = document.getElementById('badgesGridContainer');
+  if (!container) return;
+  const e = window.HC.escape;
 
-  const badges = window.HCStore.getUserBadges();
-  badgesContainer.innerHTML = badges.map(badge => `
-    <div class="badge-card ${badge.unlocked ? 'unlocked' : 'locked'}" id="badgeCard-${badge.id}">
-      <div class="badge-card-icon">${badge.icon}</div>
-      <h4>${badge.title}</h4>
-      <p>${badge.description}</p>
-      ${badge.unlocked 
-        ? `<span class="badge-status-pill unlocked"><i class="fas fa-check-circle"></i> Unlocked on ${badge.unlockedAt || 'Aug 2026'}</span>`
-        : `<button class="btn btn-sm btn-outline" onclick="unlockBadgePrompt('${badge.id}')"><i class="fas fa-lock"></i> Click to Unlock</button>`
-      }
-    </div>
-  `).join('');
+  container.innerHTML = window.HCStore.getUserBadges().map(badge => {
+    const pct = Math.round((badge.current / badge.target) * 100);
+    const progressText = badge.target >= 1000
+      ? `${window.HC.formatINR(badge.current)} / ${window.HC.formatINR(badge.target)}`
+      : `${badge.current} / ${badge.target}`;
+    return `
+      <div class="badge-card ${badge.unlocked ? 'unlocked' : 'locked'}">
+        <div class="badge-card-icon">${badge.icon}</div>
+        <h4>${e(badge.title)}</h4>
+        <p>${e(badge.description)}</p>
+        ${badge.unlocked
+          ? '<span class="badge-status-pill unlocked"><i class="fas fa-check-circle"></i> Earned</span>'
+          : `<div class="badge-progress">
+               <span><i class="fas fa-lock"></i> Progress: ${progressText}</span>
+               <div class="progress-track"><div class="progress-bar" style="width: ${pct}%;"></div></div>
+             </div>`}
+      </div>
+    `;
+  }).join('');
 }
 
-window.unlockBadgePrompt = function(badgeId) {
-  const badge = window.HCStore.unlockBadge(badgeId);
-  if (badge) {
-    window.showToast(`🎉 Achievement Unlocked: ${badge.title}!`, 'gold', 'fas fa-award');
-    renderUserStats();
-    renderUserBadges();
-  }
-};
+const chartInstances = {};
 
 function renderImpactCharts() {
+  if (typeof Chart === 'undefined') {
+    document.querySelectorAll('.chart-card canvas').forEach(canvas => {
+      canvas.insertAdjacentHTML('afterend', '<p class="form-hint">Charts could not load (offline or CDN blocked).</p>');
+    });
+    return;
+  }
+
   const trendCtx = document.getElementById('impactMonthlyChart');
   const causeCtx = document.getElementById('impactCategoryChart');
 
-  if (typeof Chart === 'undefined') return;
-
   if (trendCtx) {
-    new Chart(trendCtx, {
+    const history = window.HCStore.getMonthlyHistory(6);
+    chartInstances.trend?.destroy();
+    chartInstances.trend = new Chart(trendCtx, {
       type: 'bar',
       data: {
-        labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep (Est)'],
+        labels: history.map(m => m.label),
         datasets: [
-          {
-            label: 'Volunteer Hours',
-            data: [8, 12, 6, 10, 12, 16],
-            backgroundColor: '#E9B949',
-            borderRadius: 6
-          },
-          {
-            label: 'Donation (₹ in 100s)',
-            data: [15, 20, 10, 15, 25, 30],
-            backgroundColor: '#5B9A6A',
-            borderRadius: 6
-          }
+          { label: 'Volunteer hours (attended)', data: history.map(m => m.hours), backgroundColor: '#E9B949', borderRadius: 6, yAxisID: 'y' },
+          { label: 'Donations (₹, demo)', data: history.map(m => m.donation), backgroundColor: '#5B9A6A', borderRadius: 6, yAxisID: 'y1' }
         ]
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        },
+        plugins: { legend: { position: 'bottom' } },
         scales: {
-          y: { beginAtZero: true, grid: { color: '#F0E4B8' } },
+          y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Hours' }, grid: { color: '#F0E4B8' }, ticks: { precision: 0 } },
+          y1: { beginAtZero: true, position: 'right', title: { display: true, text: '₹' }, grid: { display: false } },
           x: { grid: { display: false } }
         }
       }
@@ -105,109 +114,209 @@ function renderImpactCharts() {
   }
 
   if (causeCtx) {
-    new Chart(causeCtx, {
+    const distribution = window.HCStore.getCauseDistribution();
+    const labels = Object.keys(distribution);
+    const palette = ['#5B9A6A', '#E9B949', '#4A8FE7', '#F28C5B', '#9B6BD3', '#E05A7A', '#3BB0A8'];
+    chartInstances.cause?.destroy();
+    chartInstances.cause = new Chart(causeCtx, {
       type: 'doughnut',
       data: {
-        labels: ['Environment', 'Education', 'Healthcare', 'Animal Welfare'],
+        labels: labels.length ? labels : ['No activity yet'],
         datasets: [{
-          data: [40, 30, 20, 10],
-          backgroundColor: ['#5B9A6A', '#E9B949', '#4A8FE7', '#F28C5B']
+          data: labels.length ? Object.values(distribution) : [1],
+          backgroundColor: labels.length ? palette.slice(0, labels.length) : ['#EEE']
         }]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
   }
 }
 
+function statusPill(status) {
+  const map = {
+    Attended: 'unlocked',
+    Registered: 'info',
+    'No-show': 'closed',
+    Cancelled: 'locked'
+  };
+  return `<span class="badge-status-pill ${map[status] || 'locked'}">${window.HC.escape(status)}</span>`;
+}
+
 function renderUserActivityTables() {
+  const { escape: e, formatDate, formatINR } = window.HC;
   const regList = document.getElementById('userRegistrationsList');
   const donList = document.getElementById('userDonationsList');
 
   if (regList) {
     const registrations = window.HCStore.getUserRegistrations();
-    if (registrations.length === 0) {
-      regList.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No volunteering activities yet. Explore opportunities to join!</td></tr>`;
-    } else {
-      regList.innerHTML = registrations.map(reg => `
+    regList.innerHTML = registrations.length === 0
+      ? '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No volunteering activities yet. Explore opportunities to join!</td></tr>'
+      : registrations.map(reg => `
         <tr>
-          <td><strong>${reg.opportunityTitle}</strong></td>
-          <td>${reg.ngoName}</td>
-          <td>${reg.dateApplied}</td>
-          <td><span class="badge-status-pill unlocked"><i class="fas fa-check"></i> ${reg.status || 'Confirmed'}</span></td>
+          <td><strong>${e(reg.opportunityTitle)}</strong><div style="font-size: 0.78rem; color: var(--text-muted);">${e(reg.hours)} hrs</div></td>
+          <td>${e(reg.ngoName)}</td>
+          <td>${formatDate(reg.eventDate)}</td>
+          <td>${statusPill(reg.status)}</td>
         </tr>
       `).join('');
-    }
   }
 
   if (donList) {
     const donations = window.HCStore.getUserDonations();
-    if (donations.length === 0) {
-      donList.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No donations recorded yet.</td></tr>`;
-    } else {
-      donList.innerHTML = donations.map(don => `
+    donList.innerHTML = donations.length === 0
+      ? '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No donations recorded yet.</td></tr>'
+      : donations.map(don => `
         <tr>
-          <td><strong>${don.campaignTitle}</strong></td>
-          <td>${don.ngoName}</td>
-          <td>${don.date}</td>
-          <td><strong style="color: var(--accent-green);">₹${don.amount.toLocaleString('en-IN')}</strong></td>
+          <td><strong>${e(don.campaignTitle)}</strong><div style="font-size: 0.78rem; color: var(--text-muted);">${e(don.reference)} • demo</div></td>
+          <td>${e(don.ngoName)}</td>
+          <td>${formatDate(don.date)}</td>
+          <td><strong style="color: var(--accent-green);">${formatINR(don.amount)}</strong></td>
         </tr>
       `).join('');
-    }
   }
 }
 
 /* ==========================================================================
-   Organizer Portal Dashboard Logic
+   2. Organizer Portal
    ========================================================================== */
+function currentOrg() {
+  return window.HCStore.getNGOById(window.HCStore.getOrganizerNgoId()) || window.HCStore.getNGOs()[0];
+}
+
 function initOrganizerDashboard() {
+  fillCategorySelects();
+  setupOrgSwitcher();
+  setupPortalMenu();
+  setupOrganizerActions();
+  initCampaignCreationForm();
+  initOpportunityCreationForm();
+  renderOrganizerDashboard();
+}
+
+function renderOrganizerDashboard() {
+  const org = currentOrg();
+  document.getElementById('orgNameLabel').textContent = org.name;
+  document.getElementById('orgLocationLabel').textContent = org.location;
   renderOrganizerMetrics();
   renderOrganizerCampaignsTable();
+  renderOrganizerOpportunitiesTable();
   renderOrganizerVolunteersTable();
-  initCampaignCreationForm();
+  renderOrganizerDonationsTable();
+}
+
+function fillCategorySelects() {
+  document.querySelectorAll('.hc-category-select').forEach(select => {
+    select.innerHTML = window.HC_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  });
+}
+
+function setupOrgSwitcher() {
+  const select = document.getElementById('orgSwitcher');
+  select.innerHTML = window.HCStore.getNGOs()
+    .map(n => `<option value="${window.HC.escape(n.id)}">${window.HC.escape(n.name)}${n.verified ? '' : ' (pending)'}</option>`)
+    .join('');
+  select.value = currentOrg().id;
+  select.addEventListener('change', () => {
+    window.HCStore.setOrganizerNgoId(select.value);
+    renderOrganizerDashboard();
+    window.showToast(`Now managing ${currentOrg().name} (demo)`, 'info', 'fas fa-building');
+  });
+}
+
+// Highlight the sidebar link for the section you clicked
+function setupPortalMenu() {
+  const links = document.querySelectorAll('.portal-menu a');
+  links.forEach(link => link.addEventListener('click', () => {
+    links.forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+  }));
+}
+
+function orgData() {
+  const orgId = currentOrg().id;
+  const campaigns = window.HCStore.getCampaigns().filter(c => c.ngoId === orgId);
+  const opportunities = window.HCStore.getOpportunities().filter(o => o.ngoId === orgId);
+  const registrations = window.HCStore.getAllRegistrations().filter(r => r.ngoId === orgId);
+  const donations = window.HCStore.getAllDonations().filter(d => d.ngoId === orgId);
+  return { campaigns, opportunities, registrations, donations };
 }
 
 function renderOrganizerMetrics() {
-  const campaigns = window.HCStore.getCampaigns();
-  const volunteers = window.HCStore.getUserRegistrations();
-  
-  const totalRaised = campaigns.reduce((sum, c) => sum + (c.raised || 0), 0);
-  const totalVolunteersCount = 245 + volunteers.length;
+  const { campaigns, registrations } = orgData();
+  const active = campaigns.filter(c => window.HCStore.isCampaignOpen(c)).length;
+  const signups = registrations.filter(r => r.status !== 'Cancelled').length;
+  const raised = campaigns.reduce((sum, c) => sum + (c.raised || 0), 0);
+  const attended = registrations.filter(r => r.status === 'Attended').length;
+  const noShow = registrations.filter(r => r.status === 'No-show').length;
 
-  const statActiveCamp = document.getElementById('orgActiveCampaigns');
-  const statVolunteers = document.getElementById('orgRegisteredVolunteers');
-  const statFunds = document.getElementById('orgFundsRaised');
+  document.getElementById('orgActiveCampaigns').textContent = active;
+  document.getElementById('orgRegisteredVolunteers').textContent = signups;
+  document.getElementById('orgFundsRaised').textContent = window.HC.formatINR(raised);
+  document.getElementById('orgAttendanceRate').textContent =
+    attended + noShow ? `${Math.round((attended / (attended + noShow)) * 100)}%` : '—';
+}
 
-  if (statActiveCamp) statActiveCamp.textContent = campaigns.length;
-  if (statVolunteers) statVolunteers.textContent = totalVolunteersCount;
-  if (statFunds) statFunds.textContent = `₹${totalRaised.toLocaleString('en-IN')}`;
+function emptyRow(cols, text) {
+  return `<tr><td colspan="${cols}" style="text-align: center; color: var(--text-muted);">${text}</td></tr>`;
 }
 
 function renderOrganizerCampaignsTable() {
   const tbody = document.getElementById('orgCampaignsTableBody');
-  if (!tbody) return;
+  const { escape: e, formatINR } = window.HC;
+  const { campaigns } = orgData();
 
-  const campaigns = window.HCStore.getCampaigns();
-  tbody.innerHTML = campaigns.map(c => {
+  tbody.innerHTML = campaigns.length === 0 ? emptyRow(5, 'No campaigns yet. Create your first one!') : campaigns.map(c => {
     const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
+    const open = window.HCStore.isCampaignOpen(c);
+    const daysLeft = window.HCStore.getDaysLeft(c);
     return `
       <tr>
         <td>
-          <strong>${c.title}</strong>
-          <div style="font-size: 0.8rem; color: var(--text-muted);">${c.category} • ${c.location}</div>
+          <strong>${e(c.title)}</strong>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">${e(c.category)} • ${e(c.location)}</div>
         </td>
-        <td>₹${(c.raised || 0).toLocaleString('en-IN')} / ₹${(c.goal || 0).toLocaleString('en-IN')}</td>
-        <td style="width: 140px;">
-          <div class="progress-track" style="margin: 0 0 4px 0;">
-            <div class="progress-bar" style="width: ${pct}%;"></div>
-          </div>
+        <td>${formatINR(c.raised)} / ${formatINR(c.goal)}</td>
+        <td style="min-width: 120px;">
+          <div class="progress-track" style="margin: 0 0 4px 0;"><div class="progress-bar" style="width: ${pct}%;"></div></div>
           <span style="font-size: 0.78rem; font-weight: 600;">${pct}%</span>
         </td>
-        <td><span class="badge-status-pill unlocked"><i class="fas fa-circle" style="font-size: 0.55rem;"></i> Active</span></td>
+        <td>${open
+          ? `<span class="badge-status-pill unlocked">Active • ${daysLeft}d left</span>`
+          : `<span class="badge-status-pill closed">${c.status === 'Closed' ? 'Closed' : 'Ended'}</span>`}</td>
+        <td>
+          <div class="table-actions">
+            ${c.status === 'Closed'
+              ? `<button class="btn btn-xs btn-outline" data-action="reopen-campaign" data-id="${e(c.id)}">Reopen</button>`
+              : `<button class="btn btn-xs btn-outline" data-action="close-campaign" data-id="${e(c.id)}">Close</button>`}
+            <button class="btn btn-xs btn-secondary" data-action="delete-campaign" data-id="${e(c.id)}" aria-label="Delete campaign"><i class="fas fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderOrganizerOpportunitiesTable() {
+  const tbody = document.getElementById('orgOpportunitiesTableBody');
+  const { escape: e, formatDate } = window.HC;
+  const { opportunities } = orgData();
+
+  tbody.innerHTML = opportunities.length === 0 ? emptyRow(5, 'No volunteer drives yet.') : opportunities.map(o => {
+    const status = window.HCStore.getOpportunityAvailability(o);
+    return `
+      <tr>
+        <td><strong>${e(o.title)}</strong><div style="font-size: 0.8rem; color: var(--text-muted);">${e(o.location)} • ${e(o.hours)} hrs</div></td>
+        <td>${o.recurring ? e(o.recurring) + '<br>' : ''}${formatDate(o.date)}</td>
+        <td>${e(o.volunteersRegistered || 0)} / ${e(o.volunteersNeeded)}</td>
+        <td>${status.ok ? '<span class="badge-status-pill unlocked">Open</span>' : `<span class="badge-status-pill closed">${e(status.reason)}</span>`}</td>
+        <td>
+          <div class="table-actions">
+            ${o.status === 'Closed'
+              ? `<button class="btn btn-xs btn-outline" data-action="reopen-opp" data-id="${e(o.id)}">Reopen</button>`
+              : `<button class="btn btn-xs btn-outline" data-action="close-opp" data-id="${e(o.id)}">Close</button>`}
+            <button class="btn btn-xs btn-secondary" data-action="delete-opp" data-id="${e(o.id)}" aria-label="Delete drive"><i class="fas fa-trash"></i></button>
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
@@ -215,71 +324,189 @@ function renderOrganizerCampaignsTable() {
 
 function renderOrganizerVolunteersTable() {
   const tbody = document.getElementById('orgVolunteersTableBody');
-  if (!tbody) return;
+  const { escape: e } = window.HC;
+  const { registrations } = orgData();
 
-  const applicants = window.HCStore.getUserRegistrations();
-  const defaultSample = [
-    { name: 'Rohan Deshmukh', email: 'rohan.d@example.com', opportunityTitle: 'Mega Urban Tree Plantation', skills: 'Physical Labor, Driving', status: 'Approved' },
-    { name: 'Priya Nair', email: 'priya.nair@example.com', opportunityTitle: 'Weekend Math Mentorship', skills: 'Teaching, Python', status: 'Approved' },
-    { name: 'Kunal Patil', email: 'kunal.p@example.com', opportunityTitle: 'Community Health Screening', skills: 'First Aid, Admin', status: 'Pending Review' }
-  ];
-
-  const allApplicants = [...applicants, ...defaultSample];
-
-  tbody.innerHTML = allApplicants.map(v => `
+  tbody.innerHTML = registrations.length === 0 ? emptyRow(5, 'No volunteer sign-ups yet.') : registrations.map(v => `
     <tr>
+      <td><strong>${e(v.name)}</strong><div style="font-size: 0.8rem; color: var(--text-muted);">${e(v.email)} • ${e(v.phone)}</div></td>
+      <td>${e(v.opportunityTitle)}<div style="font-size: 0.78rem; color: var(--text-muted);">${window.HC.formatDate(v.eventDate)}</div></td>
+      <td>${e(v.skills || '—')}</td>
+      <td>${statusPill(v.status)}</td>
       <td>
-        <strong>${v.name}</strong>
-        <div style="font-size: 0.8rem; color: var(--text-muted);">${v.email}</div>
-      </td>
-      <td>${v.opportunityTitle}</td>
-      <td>${v.skills || 'General Volunteer'}</td>
-      <td>
-        <span class="badge-status-pill ${v.status === 'Approved' || v.status === 'Confirmed' ? 'unlocked' : 'locked'}">
-          ${v.status || 'Confirmed'}
-        </span>
+        <div class="table-actions">
+          ${['Attended', 'No-show', 'Cancelled'].filter(s => s !== v.status).map(s => {
+            const tooEarly = s !== 'Cancelled' && v.eventDate > window.HC_DATE.todayISO();
+            return `<button class="btn btn-xs btn-outline" data-action="set-status" data-status="${s}" data-id="${e(v.id)}"
+              ${tooEarly ? 'disabled title="Available on or after the event date"' : ''}>${s}</button>`;
+          }).join('')}
+        </div>
       </td>
     </tr>
   `).join('');
 }
 
+function renderOrganizerDonationsTable() {
+  const tbody = document.getElementById('orgDonationsTableBody');
+  const { escape: e, formatDate, formatINR } = window.HC;
+  const { donations } = orgData();
+
+  tbody.innerHTML = donations.length === 0 ? emptyRow(5, 'No donations recorded in this browser yet.') : donations.slice(0, 20).map(d => `
+    <tr>
+      <td><strong>${e(d.donorName)}</strong></td>
+      <td>${e(d.campaignTitle)}</td>
+      <td>${formatDate(d.date)}</td>
+      <td><strong style="color: var(--accent-green);">${formatINR(d.amount)}</strong></td>
+      <td><span class="demo-tag">${e(d.reference)}</span></td>
+    </tr>
+  `).join('');
+}
+
+// One click listener handles every action button in the portal tables
+function setupOrganizerActions() {
+  document.querySelector('.portal-content-area').addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-action]');
+    if (!btn) return;
+    const { action, id, status } = btn.dataset;
+    const store = window.HCStore;
+
+    switch (action) {
+      case 'close-campaign': store.updateCampaign(id, { status: 'Closed' }); break;
+      case 'reopen-campaign': store.updateCampaign(id, { status: 'Active' }); break;
+      case 'delete-campaign':
+        if (!confirm('Delete this campaign? Demo donations already recorded stay in donor history.')) return;
+        store.deleteCampaign(id);
+        break;
+      case 'close-opp': store.updateOpportunity(id, { status: 'Closed' }); break;
+      case 'reopen-opp': store.updateOpportunity(id, { status: 'Open' }); break;
+      case 'delete-opp':
+        if (!confirm('Delete this volunteer drive? Existing sign-ups stay in volunteer history.')) return;
+        store.deleteOpportunity(id);
+        break;
+      case 'set-status': {
+        const result = store.setRegistrationStatus(id, status);
+        if (!result.success) {
+          window.showToast(result.error, 'error', 'fas fa-calendar-times');
+          return;
+        }
+        window.showToast(`Volunteer marked as ${status}.`, 'success', 'fas fa-user-check');
+        break;
+      }
+      default: return;
+    }
+    renderOrganizerDashboard();
+  });
+}
+
 function initCampaignCreationForm() {
   const form = document.getElementById('createCampaignForm');
-  if (!form) return;
+  const endDateInput = document.getElementById('newCampEndDate');
+  const { validators } = window.HC;
+  const { todayISO, isoDaysFromToday } = window.HC_DATE;
+
+  endDateInput.min = isoDaysFromToday(1);
+  endDateInput.value = isoDaysFromToday(30);
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    const title = document.getElementById('newCampTitle');
+    const goal = document.getElementById('newCampGoal');
+    const location = document.getElementById('newCampLocation');
+    const image = document.getElementById('newCampImage');
+    const description = document.getElementById('newCampDescription');
 
-    const title = document.getElementById('newCampTitle').value.trim();
-    const category = document.getElementById('newCampCategory').value;
-    const goal = document.getElementById('newCampGoal').value;
-    const location = document.getElementById('newCampLocation').value.trim();
-    const description = document.getElementById('newCampDescription').value.trim();
-    const image = document.getElementById('newCampImage').value.trim() || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80';
+    const valid = window.HC.validateFields([
+      { input: title, checks: [v => validators.minLength(v, 8, 'Title')] },
+      { input: goal, checks: [v => {
+        const n = Number(v);
+        return Number.isInteger(n) && n >= 1000 && n <= 10000000 ? '' : 'Goal must be a whole number between ₹1,000 and ₹1,00,00,000.';
+      }] },
+      { input: location, checks: [v => validators.minLength(v, 3, 'Location')] },
+      { input: endDateInput, checks: [v => (v && v > todayISO() ? '' : 'Pick a future end date.')] },
+      { input: image, checks: [v => (!v || /^https:\/\/\S+$/i.test(v) ? '' : 'Image URL must start with https://')] },
+      { input: description, checks: [v => validators.minLength(v, 30, 'Description')] }
+    ]);
+    if (!valid) return;
 
-    if (!title || !goal) {
-      window.showToast('Please fill all required campaign fields.', 'info', 'fas fa-exclamation-triangle');
-      return;
-    }
-
-    const newCampaign = window.HCStore.addCampaign({
-      title,
-      category,
-      goal: Number(goal),
-      raised: 0,
-      supporters: 0,
-      location,
-      description,
-      image,
-      ngoName: 'Green Earth Foundation (My NGO)',
-      featured: true
+    const org = currentOrg();
+    const campaign = window.HCStore.addCampaign({
+      title: title.value.trim(),
+      category: document.getElementById('newCampCategory').value,
+      goal: Number(goal.value),
+      location: location.value.trim(),
+      endDate: endDateInput.value,
+      description: description.value.trim(),
+      image: image.value.trim() || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80',
+      ngoId: org.id,
+      ngoName: org.name
     });
 
-    window.showToast(`🎉 Campaign "${newCampaign.title}" published successfully!`, 'success', 'fas fa-bullhorn');
+    window.showToast(`Campaign "${campaign.title}" published. It now appears on the Campaigns page.`, 'success', 'fas fa-bullhorn');
     form.reset();
+    endDateInput.value = isoDaysFromToday(30);
     window.closeModal('createCampaignModal');
-    
-    renderOrganizerMetrics();
-    renderOrganizerCampaignsTable();
+    renderOrganizerDashboard();
+  });
+}
+
+function initOpportunityCreationForm() {
+  const form = document.getElementById('createOpportunityForm');
+  const dateInput = document.getElementById('newOppDate');
+  const { validators } = window.HC;
+  const { todayISO, isoDaysFromToday } = window.HC_DATE;
+
+  dateInput.min = todayISO();
+  dateInput.value = isoDaysFromToday(7);
+
+  const intBetween = (min, max, label) => v => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= min && n <= max ? '' : `${label} must be between ${min} and ${max}.`;
+  };
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('newOppTitle');
+    const city = document.getElementById('newOppCity');
+    const venue = document.getElementById('newOppVenue');
+    const needed = document.getElementById('newOppNeeded');
+    const hours = document.getElementById('newOppHours');
+    const skills = document.getElementById('newOppSkills');
+    const description = document.getElementById('newOppDescription');
+
+    const valid = window.HC.validateFields([
+      { input: title, checks: [v => validators.minLength(v, 6, 'Title')] },
+      { input: dateInput, checks: [v => (v && v >= todayISO() ? '' : 'Pick today or a future date.')] },
+      { input: city, checks: [v => validators.minLength(v, 2, 'City')] },
+      { input: needed, checks: [intBetween(1, 500, 'Volunteers needed')] },
+      { input: hours, checks: [intBetween(1, 12, 'Hours')] },
+      { input: description, checks: [v => validators.minLength(v, 30, 'Description')] }
+    ]);
+    if (!valid) return;
+
+    const org = currentOrg();
+    const cityName = city.value.trim();
+    const opp = window.HCStore.addOpportunity({
+      title: title.value.trim(),
+      ngoId: org.id,
+      ngoName: org.name,
+      category: document.getElementById('newOppCategory').value,
+      city: cityName,
+      location: venue.value.trim() ? `${cityName} (${venue.value.trim()})` : cityName,
+      date: dateInput.value,
+      availability: document.getElementById('newOppAvailability').value,
+      hours: Number(hours.value),
+      volunteersNeeded: Number(needed.value),
+      skillLevel: 'Open for all',
+      skills: skills.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+      remote: document.getElementById('newOppRemote').checked,
+      image: org.banner || 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&auto=format&fit=crop&q=80',
+      description: description.value.trim()
+    });
+
+    window.showToast(`Drive "${opp.title}" published. Volunteers can now join it.`, 'success', 'fas fa-calendar-check');
+    form.reset();
+    dateInput.value = isoDaysFromToday(7);
+    window.closeModal('createOpportunityModal');
+    renderOrganizerDashboard();
   });
 }

@@ -59,7 +59,7 @@
       <div class="section-header" style="margin-bottom: 0;">
         <div class="section-badge"><i class="fas fa-chart-line"></i> Personal Social Footprint</div>
         <h2>Your Impact Dashboard</h2>
-        <p>Track your verified volunteer hours, active campaigns supported, earned recognition badges, and downloadable certificates.</p>
+        <p>Showing activity for <strong id="impactProfileName">you</strong>. Hours count once an organizer confirms attendance. <a href="#" onclick="openModal('authModal'); return false;">Change profile</a></p>
       </div>
     </div>
   </section>
@@ -75,7 +75,7 @@
             <i class="fas fa-globe-americas"></i>
           </div>
           <div>
-            <div class="stat-number" id="statCampaignsSupported">12</div>
+            <div class="stat-number" id="statCampaignsSupported">0</div>
             <div class="stat-label">Campaigns Supported</div>
           </div>
         </div>
@@ -85,8 +85,9 @@
             <i class="fas fa-user-clock"></i>
           </div>
           <div>
-            <div class="stat-number" id="statVolunteerHours">48 hrs</div>
-            <div class="stat-label">Volunteer Hours</div>
+            <div class="stat-number" id="statVolunteerHours">0 hrs</div>
+            <div class="stat-label">Volunteer Hours (attended)</div>
+            <div class="form-hint" id="statUpcomingNote"></div>
           </div>
         </div>
 
@@ -95,8 +96,8 @@
             <i class="fas fa-hand-holding-heart"></i>
           </div>
           <div>
-            <div class="stat-number" id="statTotalContributed">₹8,500</div>
-            <div class="stat-label">Total Contributed</div>
+            <div class="stat-number" id="statTotalContributed">₹0</div>
+            <div class="stat-label">Total Contributed (demo)</div>
           </div>
         </div>
 
@@ -105,7 +106,7 @@
             <i class="fas fa-award"></i>
           </div>
           <div>
-            <div class="stat-number" id="statBadgesEarned">6</div>
+            <div class="stat-number" id="statBadgesEarned">0</div>
             <div class="stat-label">Badges Earned</div>
           </div>
         </div>
@@ -116,7 +117,7 @@
         <div class="chart-card">
           <div class="chart-header">
             <h3><i class="fas fa-chart-bar" style="color: var(--accent-gold-hover);"></i> Monthly Impact Progress</h3>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Past 6 Months</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Last 6 months</span>
           </div>
           <canvas id="impactMonthlyChart" height="120"></canvas>
         </div>
@@ -133,7 +134,7 @@
       <div class="section-header" style="margin-top: 2rem; margin-bottom: 2rem;">
         <div class="section-badge"><i class="fas fa-medal"></i> Gamification & Milestones</div>
         <h2>Earned Volunteer Badges</h2>
-        <p>Unlock achievements as you participate in community drives and support grassroots programs.</p>
+        <p>Badges unlock automatically from your attended hours and donations. No shortcuts.</p>
       </div>
 
       <div class="badges-grid" id="badgesGridContainer">
@@ -143,13 +144,13 @@
       <!-- Certificate Generator Preview Section -->
       <div class="certificate-section-card" id="certificate">
         <div class="section-header" style="margin-bottom: 1.5rem;">
-          <div class="section-badge"><i class="fas fa-file-certificate"></i> Verified Social Citation</div>
+          <div class="section-badge"><i class="fas fa-certificate"></i> Participation Certificate</div>
           <h2>Download Volunteer Certificate</h2>
-          <p>Official citation verified through HopeConnect AI for your college CEP portfolios, LinkedIn credentials, and resume.</p>
+          <p>Generated from your attended hours on this demo. It is <strong>not</strong> an officially verified credential yet.</p>
         </div>
 
         <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; max-width: 500px; margin: 0 auto 1.5rem auto; flex-wrap: wrap;">
-          <input type="text" class="form-control" id="certVolunteerName" placeholder="Enter full name for certificate" value="Aarav Sharma" style="max-width: 320px;">
+          <input type="text" class="form-control" id="certVolunteerName" placeholder="Enter full name for certificate" maxlength="40" style="max-width: 320px;">
           <button class="btn btn-primary" id="updateCertBtn"><i class="fas fa-sync-alt"></i> Update Preview</button>
         </div>
 

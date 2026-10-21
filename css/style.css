@@ -312,6 +312,7 @@ section {
 }
 
 .nav-links a {
+  white-space: nowrap;
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-muted);

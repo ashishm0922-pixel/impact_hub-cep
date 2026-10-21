@@ -786,7 +786,12 @@ class StoreManager {
   setRegistrationStatus(id, status) {
     const registrations = this.getAllRegistrations();
     const reg = registrations.find(r => r.id === id);
-    if (!reg) return null;
+    if (!reg) return { success: false, error: 'Registration not found.' };
+
+    // You can't attend (or miss) an event that hasn't happened yet
+    if ((status === 'Attended' || status === 'No-show') && reg.eventDate > todayISO()) {
+      return { success: false, error: 'Attendance can be marked on or after the event date.' };
+    }
 
     const wasActive = reg.status !== 'Cancelled';
     reg.status = status;
@@ -797,7 +802,7 @@ class StoreManager {
       const opp = this.getOpportunityById(reg.opportunityId);
       if (opp) this.updateOpportunity(opp.id, { volunteersRegistered: Math.max(0, opp.volunteersRegistered - 1) });
     }
-    return reg;
+    return { success: true, registration: reg };
   }
 
   // ---------- Contact messages (stored locally; NOT emailed) ----------
