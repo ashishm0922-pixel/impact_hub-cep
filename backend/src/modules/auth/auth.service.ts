@@ -50,7 +50,7 @@ export async function registerUser(input: SignupInput) {
   // If the email can't be sent right now, sign-up still succeeds: the user can press "Resend" later
   let emailSent = true;
   try {
-    await sendVerificationEmail(user);
+    emailSent = (await sendVerificationEmail(user)) === 'sent';
   } catch (err) {
     emailSent = false;
     console.error('Could not send verification email:', err instanceof Error ? err.message : err);

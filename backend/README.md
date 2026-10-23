@@ -71,7 +71,8 @@ To really send emails with Gmail:
    SMTP_PASS="your-16-letter-app-password"
    MAIL_FROM="HopeConnect <yourname@gmail.com>"
    ```
-4. Restart the server. When you deploy, also set `APP_URL` to your website address so the links point there.
+4. Test it: `npm run email:test` (sends one test email to yourself and explains any error).
+5. Restart the server. When you deploy, also set `APP_URL` to your website address so the links point there.
 
 | Protection | How |
 |---|---|
@@ -96,10 +97,11 @@ To really send emails with Gmail:
 |---|---|
 | `npm run dev` | Start with auto-reload, using `MONGODB_URI` (Atlas) |
 | `npm run dev:local` | Start with a local MongoDB (no Atlas needed) |
+| `npm run email:test` | Send one test email with the SMTP settings in `.env` |
 | `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
 | `npm run seed` | Add sample NGOs, drives and a campaign |
-| `npm test` | 57 automated tests (uses a temporary in-memory MongoDB) |
+| `npm test` | 59 automated tests (uses a temporary in-memory MongoDB) |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` / `npm start` | Compile to `dist/` and run in production |
 

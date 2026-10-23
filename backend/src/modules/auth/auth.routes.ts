@@ -19,7 +19,7 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
     const { user, emailSent } = await registerUser(input);
     const emailNote = emailSent
       ? `We sent a verification link to ${user.email}.`
-      : 'We could not send the verification email right now; you can resend it after logging in.';
+      : 'Email sending is not set up on the server yet, so no verification email was sent.';
     res.status(201).json({
       message: env.requireAdminApproval
         ? `Account created! ${emailNote} An admin will also review your account before you can log in.`
@@ -79,8 +79,13 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
     if (user.emailVerified) {
       throw new HttpError(409, 'Your email is already verified.', { code: 'ALREADY_VERIFIED' });
     }
-    await sendVerificationEmail(user);
-    res.json({ message: `A new verification link was sent to ${user.email}.` });
+    const delivery = await sendVerificationEmail(user);
+    if (delivery === 'console') {
+      // Be honest: nothing reached the inbox. (The link was printed in the server terminal.)
+      throw new HttpError(503, 'Email sending is not set up on the server yet (SMTP settings missing in backend/.env). '
+        + 'The verification link was printed in the server terminal instead.', { code: 'EMAIL_NOT_CONFIGURED' });
+    }
+    res.json({ message: `A new verification link was sent to ${user.email}. Check your inbox and spam folder.` });
   });
 
   return router;

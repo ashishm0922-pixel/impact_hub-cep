@@ -13,6 +13,8 @@ let server: Awaited<ReturnType<typeof startTestServer>>;
 
 before(async () => {
   env.requireAdminApproval = false;
+  // Pretend an email server is configured (in tests the mailer still only stores emails in testOutbox)
+  env.smtp.host = 'smtp.test.local';
   stopDb = await startTestDb();
   server = await startTestServer();
 });
@@ -182,5 +184,26 @@ describe('verified email is required for volunteering via the API', () => {
     const res = await c.post('/api/opportunities/64b7f9f9f9f9f9f9f9f9f9f9/registrations', { availability: 'Weekends' });
     assert.equal(res.status, 403);
     assert.equal(res.body.code, 'EMAIL_NOT_VERIFIED');
+  });
+});
+
+describe('when email sending is NOT configured', () => {
+  before(() => { env.smtp.host = ''; });
+  after(() => { env.smtp.host = 'smtp.test.local'; });
+
+  test('sign-up says honestly that no email was sent', async () => {
+    const res = await client().post('/api/auth/signup', VALID_SIGNUP);
+    assert.equal(res.status, 201);
+    assert.equal(res.body.emailSent, false);
+    assert.match(res.body.message, /not set up/);
+  });
+
+  test('"Resend email" does not pretend it worked', async () => {
+    await client().post('/api/auth/signup', VALID_SIGNUP);
+    const c = client();
+    await login(c);
+    const res = await c.post('/api/auth/resend-verification');
+    assert.equal(res.status, 503);
+    assert.equal(res.body.code, 'EMAIL_NOT_CONFIGURED');
   });
 });

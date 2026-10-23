@@ -2,14 +2,14 @@ import { env } from '../../config/env';
 import { EmailTokenModel } from '../../models/email-token.model';
 import { UserModel, type UserDocument } from '../../models/user.model';
 import { HttpError } from '../../utils/http-error';
-import { escapeHtml, sendMail } from '../../utils/mailer';
+import { escapeHtml, sendMail, type Delivery } from '../../utils/mailer';
 import { hashToken, newSessionToken } from '../../utils/tokens';
 
 /**
  * Creates a fresh one-time link and emails it to the user.
  * Any older links for this user stop working (only the newest link is valid).
  */
-export async function sendVerificationEmail(user: UserDocument) {
+export async function sendVerificationEmail(user: UserDocument): Promise<Delivery> {
   const token = newSessionToken(); // 256-bit random value
   await EmailTokenModel.deleteMany({ user: user._id, purpose: 'verify-email' });
   await EmailTokenModel.create({
@@ -23,7 +23,7 @@ export async function sendVerificationEmail(user: UserDocument) {
   const link = `${env.appUrl}/pages/verify-email.html?token=${encodeURIComponent(token)}`;
   const name = user.name.split(' ')[0];
 
-  await sendMail({
+  return sendMail({
     to: user.email,
     subject: 'Verify your email for HopeConnect',
     text:

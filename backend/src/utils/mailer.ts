@@ -8,6 +8,9 @@ export interface MailMessage {
   html: string;
 }
 
+/** 'sent' = really delivered to the mail server; 'console' = only printed in the terminal */
+export type Delivery = 'sent' | 'console';
+
 /** In tests, sent emails are collected here instead of being delivered. */
 export const testOutbox: MailMessage[] = [];
 
@@ -30,25 +33,26 @@ export function isEmailConfigured() {
 }
 
 /**
- * Sends an email.
+ * Sends an email and says how it was delivered.
  *  - tests:              stored in testOutbox
- *  - no SMTP configured: printed in the terminal (so you can still click the link while developing)
- *  - SMTP configured:    really sent
+ *  - no SMTP configured: printed in the terminal → 'console' (nothing reaches the inbox!)
+ *  - SMTP configured:    really sent → 'sent'
  */
-export async function sendMail(message: MailMessage) {
+export async function sendMail(message: MailMessage): Promise<Delivery> {
   if (process.env.NODE_ENV === 'test') {
     testOutbox.push(message);
-    return;
+    return isEmailConfigured() ? 'sent' : 'console';
   }
   if (!isEmailConfigured()) {
+    const line = '-'.repeat(62);
     console.warn(
-      `\n────── EMAIL NOT SENT (SMTP is not configured in .env) ──────\n` +
-      `To: ${message.to}\nSubject: ${message.subject}\n\n${message.text}\n` +
-      `──────────────────────────────────────────────────────────────\n`
+      `\n${line}\nEMAIL NOT SENT (SMTP is not configured in backend/.env)\n` +
+      `To: ${message.to}\nSubject: ${message.subject}\n\n${message.text}\n${line}\n`
     );
-    return;
+    return 'console';
   }
   await getTransporter().sendMail({ from: env.mailFrom, ...message });
+  return 'sent';
 }
 
 /** Escape text before putting it into an HTML email. */

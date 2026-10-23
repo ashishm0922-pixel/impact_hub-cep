@@ -453,7 +453,7 @@ function setupSignupForm() {
       // Go straight to the Login tab, ready to log in
       switchAuthTab('login');
       document.getElementById('loginIdentifier').value = email;
-      showAlert('loginAlert', data.message, 'success');
+      showAlert('loginAlert', data.message, data.emailSent === false ? 'info' : 'success');
       setTimeout(() => document.getElementById('loginPassword').focus(), 60);
       return;
     }
