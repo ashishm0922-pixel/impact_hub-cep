@@ -199,6 +199,47 @@ const HC = {
 };
 window.HC = HC;
 
+/* ==========================================================================
+   Page lifecycle (used by the no-reload navigation in router.js)
+   Page scripts must use these instead of DOMContentLoaded / document listeners /
+   window.x = ..., so that nothing is left behind when you move to another page.
+   ========================================================================== */
+const pageCleanups = [];
+
+// Run fn once the page content is ready. If it already is (no-reload navigation), run it
+// right after the current script finishes, so all of the script's variables exist first.
+HC.ready = function(fn) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+  else queueMicrotask(fn);
+};
+
+// addEventListener that is automatically removed when leaving the page
+HC.onPage = function(target, type, handler, options) {
+  target.addEventListener(type, handler, options);
+  pageCleanups.push(() => target.removeEventListener(type, handler, options));
+};
+
+// window[name] = value, automatically removed when leaving the page
+HC.expose = function(name, value) {
+  window[name] = value;
+  pageCleanups.push(() => {
+    if (window[name] === value) delete window[name];
+  });
+};
+
+// Go to another page of the site — without a reload when the router is active
+HC.go = function(url) {
+  if (typeof HC.navigate === 'function') HC.navigate(new URL(url, window.location.href).href);
+  else window.location.href = url;
+};
+
+// Called by the router just before it swaps in the next page
+HC.cleanupPage = function() {
+  while (pageCleanups.length) {
+    try { pageCleanups.pop()(); } catch (err) { console.warn(err); }
+  }
+};
+
 /**
  * Where the API lives. Normally the backend serves the website itself (same address),
  * so this is ''. If the site is opened from the static server on :5500 or as a file,
@@ -210,6 +251,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initToastContainer();
   initModals();
+  initDemoNotice();
+  highlightActiveNavLink();
+});
+
+// After the router swaps in a new page: re-connect the parts that live in the new HTML
+document.addEventListener('hc:page-ready', () => {
+  initNavbar();
   initDemoNotice();
   highlightActiveNavLink();
 });

@@ -2647,3 +2647,31 @@ body > * {
 .admin-shell {
   width: 100%;
 }
+
+/* ==========================================================================
+   v8: No-reload navigation — thin loading bar at the very top
+   ========================================================================== */
+.route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-orange));
+  z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  transition: width 0.25s ease, opacity 0.3s ease;
+}
+
+.route-progress.active {
+  width: 70%;
+  opacity: 1;
+  transition: width 8s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.1s;
+}
+
+/* The router moves focus to the new content for screen readers; don't draw an outline for that */
+main[tabindex="-1"]:focus,
+section[tabindex="-1"]:focus {
+  outline: none;
+}

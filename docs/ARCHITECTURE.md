@@ -39,13 +39,30 @@ Rules:
 
 ## Frontend
 
+### No-reload navigation (`core/router.js`)
+Clicking a link to another page does **not** reload the browser. The router fetches the next page
+(prefetched on hover), swaps the content, updates the address bar and title, and runs that page's scripts.
+The login modal, toasts and the logged-in state stay, so the header never flickers. Back/Forward work.
+`admin.html` always loads normally. If anything fails, the router falls back to a normal page load.
+
+**Rules for page scripts** (everything in `assets/js/pages/` and `assets/js/features/`), because they can run many times without a reload:
+
+| Instead of… | Use… | Why |
+|---|---|---|
+| `document.addEventListener('DOMContentLoaded', init)` | `HC.ready(init)` | DOMContentLoaded only fires on a real page load |
+| `document/window.addEventListener(...)` | `HC.onPage(document, 'event', fn)` | removed automatically when leaving the page |
+| `window.myFn = myFn` | `HC.expose('myFn', myFn)` | removed automatically when leaving the page |
+| `window.location.href = url` | `HC.go(url)` | navigates without a reload |
+| top-level `const`/`let` | wrap the file in `(() => { ... })();` | avoids "already declared" on the 2nd visit |
+
 ### Script load order (every page)
 1. `core/seed-data.js`: demo data and date helpers (no logic).
 2. `core/store.js`: `window.HCStore`, the only code that touches `localStorage`.
 3. `core/app.js`: `window.HC` helpers (`HC.api` for server calls) plus the navbar, toasts and modals.
 4. `core/auth.js`: the login/sign-up modal and the header's logged-in state (`window.Auth.user`).
-5. `features/*.js`: widgets the page uses (matcher, calculator, certificate).
-6. `pages/<page>.js`: the code for that one page.
+5. `core/router.js`: no-reload navigation between pages.
+6. `features/*.js`: widgets the page uses (matcher, calculator, certificate).
+7. `pages/<page>.js`: the code for that one page.
 
 These are plain `<script>` tags (no bundler), so **order matters**: later files use globals from earlier ones.
 
@@ -62,12 +79,12 @@ These are plain `<script>` tags (no bundler), so **order matters**: later files 
 
 ### Adding a new page
 1. Create `frontend/pages/my-page.html` (copy the header/footer from another page).
-2. Link CSS as `../assets/css/style.css?v=4` and `../assets/css/responsive.css?v=4`.
-3. Add the four `core/` scripts, then `../assets/js/pages/my-page.js`.
+2. Link CSS as `../assets/css/style.css?v=8` and `../assets/css/responsive.css?v=8`.
+3. Add the five `core/` scripts, then `../assets/js/pages/my-page.js` (follow the page-script rules above).
 4. Add a nav link `<li><a href="my-page.html">My Page</a></li>` to every page (and `pages/my-page.html` in `index.html`).
 
 ### Cache busting
-Asset URLs end in `?v=4`. When you change CSS/JS that is already deployed, bump the number in the HTML so browsers fetch the new file.
+Asset URLs end in `?v=8`. When you change CSS/JS that is already deployed, bump the number in the HTML so browsers fetch the new file.
 
 ## Backend
 

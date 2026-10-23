@@ -37,7 +37,8 @@ hopeconnect-ai/
 │           │   ├── seed-data.js  ← demo data + date helpers
 │           │   ├── store.js      ← data layer (localStorage) + calculated stats
 │           │   ├── app.js        ← shared helpers: escaping, validation, API calls, toasts, modals
-│           │   └── auth.js       ← login / sign-up modal + logged-in header
+│           │   ├── auth.js       ← login / sign-up modal + logged-in header
+│           │   └── router.js     ← no-reload navigation between pages
 │           ├── features/      ← reusable widgets
 │           │   ├── matcher.js            ← rule-based cause matcher (home)
 │           │   ├── impact-calculator.js  ← "what ₹X delivers" (home, campaigns)

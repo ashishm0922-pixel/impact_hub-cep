@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshCurrentUser();
 });
 
+// No-reload navigation: the user is already known, so the header is correct instantly (no flicker)
+document.addEventListener('hc:page-ready', () => {
+  renderAuthArea();
+  renderVerifyBanner();
+});
+
 /* ==========================================================================
    Session state
    ========================================================================== */
