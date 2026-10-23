@@ -9,7 +9,7 @@
   HC.ready(() => {
     if (!document.getElementById('userImpactDashboard')) return;
     initUserImpactDashboard();
-    // Re-render if the user edits their demo profile (different email = different activity)
+    // Re-render when someone logs in or out (different user = different activity)
     HC.onPage(document, 'hc:profile-changed', initUserImpactDashboard);
   });
 
@@ -36,7 +36,12 @@
     set('statUpcomingNote', stats.eventsUpcoming
       ? `+${stats.upcomingHours} hrs pending from ${stats.eventsUpcoming} upcoming event${stats.eventsUpcoming > 1 ? 's' : ''}`
       : 'Hours count after attendance is confirmed');
-    set('impactProfileName', profile.name);
+    const intro = document.getElementById('impactIntro');
+    if (intro) {
+      intro.innerHTML = profile.isDemo
+        ? `<a href="#" data-auth="login">Log in</a> to see your volunteer hours, pledges, badges and certificate.`
+        : `Showing activity for <strong>${HC.escape(profile.name)}</strong>. Hours count once an organizer confirms your attendance.`;
+    }
   }
 
   function renderUserBadges() {

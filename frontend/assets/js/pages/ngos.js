@@ -174,6 +174,9 @@
         : '<p style="font-size: 0.88rem;">No active campaigns right now.</p>'}
     `;
 
+    document.getElementById('ngoProfileFooter').innerHTML = `
+      <button type="button" class="report-link" data-report="ngo" data-id="${e(ngo.id)}" data-name="${e(ngo.name)}" style="margin-right: auto;"><i class="fas fa-flag"></i> Report this NGO</button>
+      <button class="btn btn-secondary" onclick="closeModal('ngoProfileModal')">Close</button>`;
     window.openModal('ngoProfileModal');
   }
   HC.expose('viewNgoProfile', viewNgoProfile);

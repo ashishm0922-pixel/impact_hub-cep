@@ -1,12 +1,10 @@
 /**
  * HopeConnect AI - Contact page
- * General message form + NGO registration form (both validated, stored locally).
+ * General message form (sent to the server) + guide for registering an NGO.
  */
 
 // Private scope: lets this script run again on every visit (no-reload navigation)
 (() => {
-  const DEFAULT_NGO_LOGO = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&auto=format&fit=crop&q=80';
-  const DEFAULT_NGO_BANNER = 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop&q=80';
 
   function switchFormTab(type) {
     const showNgo = type === 'ngo';
@@ -34,8 +32,10 @@
     nameInput.value = profile.name || '';
     emailInput.value = profile.email || '';
 
-    form.addEventListener('submit', (e) => {
+    const submit = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (submit.disabled) return;
       const messageInput = document.getElementById('contactMessage');
       const valid = window.HC.validateFields([
         { input: nameInput, checks: [validators.name] },
@@ -44,66 +44,46 @@
       ]);
       if (!valid) return;
 
-      window.HCStore.saveContactMessage({
+      HC.setLoading(submit, true, 'Sending...');
+      const result = await window.HCStore.saveContactMessage({
         name: nameInput.value.trim(),
         email: emailInput.value.trim(),
-        subject: document.getElementById('contactSubject').value.trim(),
+        subject: document.getElementById('contactSubject').value.trim() || undefined,
         message: messageInput.value.trim()
       });
-      window.showToast('Message saved (demo). Email delivery is not connected yet, so nobody has been notified.', 'success', 'fas fa-paper-plane');
+      HC.setLoading(submit, false);
+      if (!result.success) {
+        if (!HC.showServerErrors({ name: nameInput, email: emailInput, message: messageInput }, result)) {
+          window.showToast(result.error, 'error', 'fas fa-exclamation-circle');
+        }
+        return;
+      }
+      window.showToast('Thank you! Your message was sent to the HopeConnect team.', 'success', 'fas fa-paper-plane');
       form.reset();
     });
   }
 
+  // The NGO tab explains the steps and shows the right button for who is logged in
   function setupNgoRegisterForm() {
-    const form = document.getElementById('ngoRegisterForm');
-    const { validators } = window.HC;
-    const currentYear = new Date().getFullYear();
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const nameInput = document.getElementById('regNgoName');
-      const categoryInput = document.getElementById('regNgoCategory');
-      const locationInput = document.getElementById('regNgoLocation');
-      const emailInput = document.getElementById('regNgoEmail');
-      const yearInput = document.getElementById('regNgoYear');
-      const websiteInput = document.getElementById('regNgoWebsite');
-      const descInput = document.getElementById('regNgoDesc');
-
-      const existingNames = window.HCStore.getNGOs().map(n => n.name.toLowerCase());
-
-      const valid = window.HC.validateFields([
-        { input: nameInput, checks: [
-          v => validators.minLength(v, 3, 'Organization name'),
-          v => (existingNames.includes(v.toLowerCase()) ? 'An NGO with this name is already listed.' : '')
-        ] },
-        { input: categoryInput, checks: [v => validators.required(v, 'Cause category')] },
-        { input: locationInput, checks: [v => validators.minLength(v, 3, 'Location')] },
-        { input: emailInput, checks: [validators.email] },
-        { input: yearInput, checks: [v => {
-          const year = Number(v);
-          return Number.isInteger(year) && year >= 1850 && year <= currentYear ? '' : `Enter a year between 1850 and ${currentYear}.`;
-        }] },
-        { input: websiteInput, checks: [v => (!v || /^https?:\/\/[^\s.]+\.[^\s]{2,}$/i.test(v) ? '' : 'Enter a full URL starting with https://')] },
-        { input: descInput, checks: [v => validators.minLength(v, 40, 'Description')] }
-      ]);
-      if (!valid) return;
-
-      const newNgo = window.HCStore.addNGO({
-        name: nameInput.value.trim(),
-        category: categoryInput.value,
-        location: locationInput.value.trim(),
-        email: emailInput.value.trim(),
-        website: websiteInput.value.trim(),
-        description: descInput.value.trim(),
-        foundedYear: Number(yearInput.value),
-        logo: DEFAULT_NGO_LOGO,
-        banner: DEFAULT_NGO_BANNER
-      });
-
-      window.showToast(`"${newNgo.name}" submitted. It is listed as Pending Verification.`, 'success', 'fas fa-check-double');
-      form.reset();
-      setTimeout(() => window.HC.go(window.HC.page('ngos.html')), 1500);
-    });
+    const actions = document.getElementById('ngoRegisterActions');
+    const render = () => {
+      const profile = window.HCStore.getProfile();
+      if (profile.role === 'ngo') {
+        actions.innerHTML = `<a class="btn btn-green" href="${HC.escape(HC.page('dashboard.html'))}"><i class="fas fa-th-large"></i> Go to my dashboard</a>`;
+      } else if (window.HCStore.isLoggedIn()) {
+        actions.innerHTML = '<p class="form-hint">You are logged in as a volunteer/donor. Log out and create a separate NGO account to register an organization.</p>';
+      } else {
+        actions.innerHTML = `
+          <button type="button" class="btn btn-green" id="ngoSignupBtn"><i class="fas fa-user-plus"></i> Sign up as an NGO</button>
+          <button type="button" class="btn btn-outline" data-auth="login">I already have an NGO account</button>`;
+        document.getElementById('ngoSignupBtn').addEventListener('click', () => {
+          HC.openAuth('signup', { afterLogin: 'dashboard' });
+          const role = document.getElementById('signupRole');
+          if (role) role.value = 'ngo';
+        });
+      }
+    };
+    render();
+    HC.onPage(document, 'hc:auth-changed', render);
   }
 })();

@@ -4,21 +4,23 @@
  * Flow:  Sign up → go to the Login tab → log in right away → click the link in the
  *        verification email → account is verified. (Optionally an admin must also approve.)
  * The session lives in an httpOnly cookie set by the server. This file never stores
- * passwords or tokens — it only asks the server "who am I?" (GET /api/auth/me).
+ * passwords or tokens — it only asks the server "who am I?" (GET /api/auth/session).
  *
- * Loaded on every page after app.js. Uses: HC.api, HC.validators, HC.setFieldError.
+ * Loaded on every page after store.js. Uses: HC.api, HC.validators, HCStore.
  */
 
 const Auth = {
-  user: null,     // the logged-in user, or null
-  checked: false  // true once we've asked the server
+  user: null,        // the logged-in user, or null
+  checked: false,    // true once we've asked the server
+  afterLogin: null   // 'dashboard' when login was opened from the header
 };
 window.Auth = Auth;
 
 document.addEventListener('DOMContentLoaded', () => {
   buildAuthModal();
   renderAuthArea();
-  refreshCurrentUser();
+  // The store already asked the server who is logged in — reuse that answer
+  window.HCStore.ready.then(() => setCurrentUser(window.HCStore.user));
 });
 
 // No-reload navigation: the user is already known, so the header is correct instantly (no flicker)
@@ -32,17 +34,17 @@ document.addEventListener('hc:page-ready', () => {
    ========================================================================== */
 async function refreshCurrentUser() {
   const { ok, data } = await HC.api('GET', '/api/auth/session');
-  setCurrentUser(ok ? data.user : null);
+  await setCurrentUser(ok ? data.user : null);
 }
 
-function setCurrentUser(user) {
-  const changed = (Auth.user?.id || null) !== (user?.id || null);
+async function setCurrentUser(user) {
+  const changed = !Auth.checked || (Auth.user?.id || null) !== (user?.id || null);
   Auth.user = user;
   Auth.checked = true;
 
-  // Keep the rest of the (demo) site in sync with who is logged in
-  if (user) window.HCStore.setAccountProfile(user);
-  else if (!window.HCStore.getProfile().isDemo) window.HCStore.clearAccountProfile();
+  // Keep the data store in sync: a different user means different "my activity"
+  if (changed) await window.HCStore.setUser(user);
+  else window.HCStore.user = user;
 
   renderAuthArea();
   renderVerifyBanner();
@@ -58,14 +60,32 @@ async function logout() {
     window.showToast(data.error, 'error', 'fas fa-wifi');
     return;
   }
-  setCurrentUser(null);
+  await setCurrentUser(null);
   window.showToast('You have been logged out.', 'info', 'fas fa-sign-out-alt');
 }
 
 /** Open the modal on a tab: HC.openAuth('login') or HC.openAuth('signup') */
-HC.openAuth = function(tab = 'login') {
+HC.openAuth = function(tab = 'login', { afterLogin = null, message = '' } = {}) {
+  Auth.afterLogin = afterLogin;
   switchAuthTab(tab);
+  if (message) showAlert(tab === 'signup' ? 'signupAlert' : 'loginAlert', message, 'info');
   window.openModal('authModal');
+};
+
+/**
+ * For actions that need an account (join a drive, pledge...).
+ * Returns true if the user may continue; otherwise explains why and returns false.
+ */
+HC.requireLogin = function(action = 'continue', { verified = true } = {}) {
+  if (!Auth.user) {
+    HC.openAuth('login', { message: `Please log in (or sign up) to ${action}.` });
+    return false;
+  }
+  if (verified && !Auth.user.emailVerified) {
+    window.showToast(`Please verify your email to ${action}. Use "Resend email" in the banner if you need a new link.`, 'info', 'fas fa-envelope');
+    return false;
+  }
+  return true;
 };
 
 /* ==========================================================================
@@ -78,12 +98,12 @@ function renderAuthArea() {
 
   if (area) {
     area.innerHTML = Auth.user
-      ? `<span class="auth-chip" title="${e(Auth.user.email)}">
+      ? `<a class="auth-chip" href="${e(HC.page('dashboard.html'))}" title="My dashboard (${e(Auth.user.email)})">
            <i class="fas fa-user-circle"></i> ${e(Auth.user.name.split(' ')[0])}
            ${Auth.user.emailVerified
              ? `<span class="auth-chip-role">${e(roleLabel[Auth.user.role] || Auth.user.role)}</span>`
              : '<span class="auth-chip-role unverified" title="Email not verified yet">Unverified</span>'}
-         </span>
+         </a>
          <button type="button" class="btn btn-sm btn-outline" data-auth="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>`
       : `<button type="button" class="btn btn-sm btn-outline" data-auth="login">Login</button>
          <button type="button" class="btn btn-sm btn-primary" data-auth="signup">Sign up</button>`;
@@ -94,7 +114,7 @@ function renderAuthArea() {
   if (navLinks) {
     navLinks.querySelectorAll('.nav-mobile-only').forEach(li => li.remove());
     const items = Auth.user
-      ? [`<span class="nav-mobile-user"><i class="fas fa-user-circle"></i> ${e(Auth.user.name)}</span>`,
+      ? [`<a class="nav-mobile-user" href="${e(HC.page('dashboard.html'))}"><i class="fas fa-th-large"></i> My Dashboard (${e(Auth.user.name.split(' ')[0])})</a>`,
          '<button type="button" class="nav-link-button" data-auth="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>']
       : ['<button type="button" class="nav-link-button" data-auth="login"><i class="fas fa-sign-in-alt"></i> Login</button>',
          '<button type="button" class="nav-link-button" data-auth="signup"><i class="fas fa-user-plus"></i> Sign up</button>'];
@@ -114,7 +134,7 @@ document.addEventListener('click', (event) => {
   window.closeMobileMenu();
   const action = btn.dataset.auth;
   if (action === 'logout') logout();
-  else HC.openAuth(action);
+  else HC.openAuth(action, { afterLogin: 'dashboard' });
 });
 
 /* ==========================================================================
@@ -354,8 +374,12 @@ function setupLoginForm() {
       form.reset();
       HC.clearFieldErrors(form);
       window.closeModal('authModal');
-      setCurrentUser(data.user);
+      await setCurrentUser(data.user);
       window.showToast(data.message || 'Logged in.', 'success', 'fas fa-user-check');
+      if (Auth.afterLogin === 'dashboard' && !window.location.pathname.endsWith('/dashboard.html')) {
+        HC.go(HC.page('dashboard.html'));
+      }
+      Auth.afterLogin = null;
       if (!data.user.emailVerified) {
         setTimeout(() => window.showToast(`Please verify your email: check ${data.user.email} for our link.`, 'info', 'fas fa-envelope'), 600);
       }

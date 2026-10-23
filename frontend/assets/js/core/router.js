@@ -11,7 +11,7 @@
  */
 (() => {
   // Scripts that are loaded ONCE and stay for the whole visit
-  const PERSISTENT_SCRIPTS = ['/core/seed-data.js', '/core/store.js', '/core/app.js', '/core/auth.js', '/core/router.js'];
+  const PERSISTENT_SCRIPTS = ['/core/constants.js', '/core/store.js', '/core/app.js', '/core/auth.js', '/core/router.js'];
   // Elements that survive navigation
   const PERSISTENT_IDS = ['toastContainer', 'authModal'];
   // Pages that should always load normally (separate app / opened from email)

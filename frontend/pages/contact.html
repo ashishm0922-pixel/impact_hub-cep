@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=10">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=10">
+  <link rel="stylesheet" href="../assets/css/style.css?v=11">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=11">
 </head>
 <body>
 
@@ -74,9 +74,7 @@
           <!-- General Contact Form -->
           <form id="generalContactForm" novalidate>
             <h3 style="margin-bottom: 0.5rem;">Send Us a Message</h3>
-            <div class="demo-callout">
-              <i class="fas fa-info-circle"></i> Email delivery is not connected yet. Messages are saved in this browser only.
-            </div>
+            <p style="font-size: 0.9rem; margin-bottom: 1.25rem;">Your message goes to the HopeConnect team.</p>
 
             <div class="form-group">
               <label for="contactName">Full Name *</label>
@@ -103,64 +101,17 @@
             </button>
           </form>
 
-          <!-- NGO Onboarding Form (Hidden by default) -->
-          <form id="ngoRegisterForm" novalidate hidden>
+          <!-- NGO onboarding guide (Hidden by default) -->
+          <div id="ngoRegisterForm" hidden>
             <h3 style="margin-bottom: 0.5rem;">Register Your NGO</h3>
-            <div class="demo-callout">
-              <i class="fas fa-info-circle"></i> New NGOs are listed as <strong>Pending Verification</strong>.
-              In the full platform, our team would check registration and 80G/12A documents before granting the verified badge.
-            </div>
-
-            <div class="form-group">
-              <label for="regNgoName">Organization Name *</label>
-              <input type="text" class="form-control" id="regNgoName" maxlength="80" placeholder="e.g. Pune River Revitalization Trust">
-            </div>
-
-            <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div class="form-group">
-                <label for="regNgoCategory">Primary Cause Category *</label>
-                <select class="form-control" id="regNgoCategory">
-                  <option value="">Select a cause</option>
-                  <option value="Environment">Environment</option>
-                  <option value="Education">Education</option>
-                  <option value="Healthcare">Healthcare</option>
-                  <option value="Animal Welfare">Animal Welfare</option>
-                  <option value="Women Empowerment">Women Empowerment</option>
-                  <option value="Child Welfare">Child Welfare</option>
-                  <option value="Disaster Relief">Disaster Relief</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="regNgoLocation">Location (City, State) *</label>
-                <input type="text" class="form-control" id="regNgoLocation" maxlength="80" placeholder="e.g. Pune, Maharashtra">
-              </div>
-            </div>
-
-            <div class="stack-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div class="form-group">
-                <label for="regNgoEmail">Official Email *</label>
-                <input type="email" class="form-control" id="regNgoEmail" placeholder="contact@ngo.org">
-              </div>
-              <div class="form-group">
-                <label for="regNgoYear">Year Founded *</label>
-                <input type="number" class="form-control" id="regNgoYear" placeholder="e.g. 2018" inputmode="numeric">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="regNgoWebsite">Website (optional)</label>
-              <input type="url" class="form-control" id="regNgoWebsite" placeholder="https://your-ngo.org">
-            </div>
-
-            <div class="form-group">
-              <label for="regNgoDesc">Brief Description & Mission *</label>
-              <textarea class="form-control" id="regNgoDesc" rows="3" maxlength="600" placeholder="Tell us about your community programs, past achievements, and volunteer needs (at least 40 characters)..."></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-green" style="width: 100%;">
-              <i class="fas fa-check-circle"></i> Submit NGO Application
-            </button>
-          </form>
+            <p style="font-size: 0.92rem;">Your organization is managed from an NGO account, so only your team can edit it and see your volunteers.</p>
+            <ol class="steps-list">
+              <li><strong>Create an NGO account</strong> (choose "NGO / Organizer" when signing up) and verify your email.</li>
+              <li><strong>Open My Dashboard</strong> and fill in your organization details (registration number, cause, city).</li>
+              <li><strong>An admin verifies</strong> your organization. Then you can publish drives and campaigns and see who joins.</li>
+            </ol>
+            <div id="ngoRegisterActions" class="verify-actions" style="justify-content: flex-start;"></div>
+          </div>
         </div>
 
         <!-- Info & Office Details Column -->
@@ -219,11 +170,11 @@
   </footer>
 
   <!-- Scripts (order matters: core first, then features, then this page) -->
-  <script src="../assets/js/core/seed-data.js?v=10"></script>
-  <script src="../assets/js/core/store.js?v=10"></script>
-  <script src="../assets/js/core/app.js?v=10"></script>
-  <script src="../assets/js/core/auth.js?v=10"></script>
-  <script src="../assets/js/core/router.js?v=10"></script>
-  <script src="../assets/js/pages/contact.js?v=10"></script>
+  <script src="../assets/js/core/constants.js?v=11"></script>
+  <script src="../assets/js/core/app.js?v=11"></script>
+  <script src="../assets/js/core/store.js?v=11"></script>
+  <script src="../assets/js/core/auth.js?v=11"></script>
+  <script src="../assets/js/core/router.js?v=11"></script>
+  <script src="../assets/js/pages/contact.js?v=11"></script>
 </body>
 </html>

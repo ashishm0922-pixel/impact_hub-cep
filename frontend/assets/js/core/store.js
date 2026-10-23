@@ -1,35 +1,19 @@
 /**
- * HopeConnect AI - Central Data Store (browser localStorage)
- * Depends on: core/seed-data.js (CATEGORIES, date helpers, seed builders)
+ * HopeConnect AI - Data store (talks to the backend API)
+ * Depends on: core/constants.js (CATEGORIES, date helpers) and core/app.js (HC.api).
  *
- * IMPORTANT: This is a DEMO data layer. Everything is saved only in this
- * browser's localStorage. No data is sent to a server, no emails are sent
- * and no money is ever transferred.
+ * Pages read data with simple, instant calls (HCStore.getOpportunities() ...) from an
+ * in-memory copy that is loaded from the server once and refreshed when it gets old.
+ * Changes (join a drive, pledge, create a campaign...) are sent to the server, and the
+ * copy is updated with the server's answer.
  *
- * Design rule: we store raw records (registrations, donations, campaigns...)
- * and CALCULATE totals (hours, amounts, badges) from them. That way the
- * dashboard numbers can never drift out of sync with the actual data.
+ * Rule kept from before: store raw records and CALCULATE totals (hours, ₹, badges) from them.
  */
 
-const DATA_VERSION = '3'; // bump when the seed data format changes (resets old browser data)
-
-const STORAGE_KEYS = {
-  VERSION: 'hopeconnect_data_version',
-  NGOS: 'hopeconnect_ngos',
-  OPPORTUNITIES: 'hopeconnect_opportunities',
-  CAMPAIGNS: 'hopeconnect_campaigns',
-  REGISTRATIONS: 'hopeconnect_user_registrations',
-  DONATIONS: 'hopeconnect_user_donations',
-  MESSAGES: 'hopeconnect_contact_messages',
-  PROFILE: 'hopeconnect_profile',
-  PREFERENCES: 'hopeconnect_match_preferences',
-  CURRENT_ROLE: 'hopeconnect_current_role',
-  ORGANIZER_NGO: 'hopeconnect_organizer_ngo'
-};
-
+const PREFERENCES_KEY = 'hopeconnect_match_preferences';
+const CATALOG_MAX_AGE_MS = 30 * 1000; // re-load public data when navigating after 30 s
 
 // Badges are earned by RULES computed from your data — never by clicking.
-// Each rule returns { current, target } so we can show progress.
 const BADGE_RULES = [
   { id: 'first-step', title: 'First Step', icon: '🌱',
     description: 'Attend your first volunteering activity.',
@@ -41,159 +25,104 @@ const BADGE_RULES = [
     description: 'Contribute 20 attended volunteer hours.',
     progress: s => ({ current: s.volunteerHours, target: 20 }) },
   { id: 'first-gift', title: 'First Gift', icon: '🎁',
-    description: 'Make your first (demo) donation to a campaign.',
+    description: 'Make your first pledge to a campaign.',
     progress: s => ({ current: s.donationCount, target: 1 }) },
   { id: 'super-supporter', title: 'Super Supporter', icon: '❤️',
-    description: 'Contribute ₹5,000 in total across campaigns.',
+    description: 'Pledge ₹5,000 in total across campaigns.',
     progress: s => ({ current: s.totalContributed, target: 5000 }) },
   { id: 'impact-champion', title: 'Impact Champion', icon: '🌍',
-    description: 'Support 3 different causes (by volunteering or donating).',
+    description: 'Support 3 different causes (by volunteering or pledging).',
     progress: s => ({ current: s.causesSupported, target: 3 }) },
   { id: 'century', title: 'Century Achiever', icon: '🏆',
     description: 'Reach 100 attended volunteer hours.',
     progress: s => ({ current: s.volunteerHours, target: 100 }) },
   { id: 'organizer', title: 'Master Organizer', icon: '🏢',
-    description: 'Create 3 campaigns or opportunities as an organizer.',
+    description: 'Publish 3 campaigns or drives as an NGO.',
     progress: s => ({ current: s.itemsCreated, target: 3 }) }
 ];
 
+/** Turns an API failure into { success: false, error, code, fields } */
+function failure(result) {
+  return { success: false, status: result.status, error: result.data?.error || 'Something went wrong.', code: result.data?.code, fields: result.data?.fields || [] };
+}
+
 class StoreManager {
   constructor() {
-    this.init();
+    this.catalog = { ngos: [], opportunities: [], campaigns: [] };
+    this.activity = { registrations: [], pledges: [] };
+    this.ngoConsole = null; // loaded on the dashboard for NGO accounts
+    this.user = null;
+    this.catalogLoadedAt = 0;
+    this.loadError = null;
+    this.ready = this.load();
   }
 
-  // ---------- low-level helpers ----------
-  read(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (err) {
-      console.warn('HopeConnect: could not read', key, err);
-      return fallback;
+  /* ---------------- Loading ---------------- */
+  async load() {
+    const [catalog, session] = await Promise.all([this.loadCatalog(), HC.api('GET', '/api/auth/session')]);
+    this.user = session.ok ? session.data.user : null;
+    if (this.user) await this.loadActivity();
+    return catalog;
+  }
+
+  async loadCatalog() {
+    const res = await HC.api('GET', '/api/catalog');
+    if (res.ok) {
+      this.catalog = res.data;
+      this.catalogLoadedAt = Date.now();
+      this.loadError = null;
+    } else {
+      this.loadError = res.data?.error || 'Could not load data from the server.';
     }
+    return res.ok;
   }
 
-  write(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {
-      console.warn('HopeConnect: could not save', key, err);
+  async loadActivity() {
+    if (!this.user) {
+      this.activity = { registrations: [], pledges: [] };
+      return;
     }
+    const res = await HC.api('GET', '/api/me/activity');
+    this.activity = res.ok ? res.data : { registrations: [], pledges: [] };
   }
 
-  newId(prefix) {
-    return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  /** Called before each page runs: refresh public data if it's older than 30 s */
+  async ensureFresh() {
+    await this.ready;
+    if (Date.now() - this.catalogLoadedAt > CATALOG_MAX_AGE_MS) await this.loadCatalog();
   }
 
-  init() {
-    // If the saved data is from an older version of the app, start fresh.
-    if (localStorage.getItem(STORAGE_KEYS.VERSION) !== DATA_VERSION) {
-      this.resetDemoData();
-    }
+  /** Called by auth.js after login / logout */
+  async setUser(user) {
+    this.user = user;
+    this.ngoConsole = null;
+    await this.loadActivity();
   }
 
-  resetDemoData() {
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('hopeconnect_'))
-      .forEach(k => localStorage.removeItem(k));
-
-    this.write(STORAGE_KEYS.NGOS, INITIAL_NGOS);
-    this.write(STORAGE_KEYS.OPPORTUNITIES, buildInitialOpportunities());
-    this.write(STORAGE_KEYS.CAMPAIGNS, buildInitialCampaigns());
-    this.write(STORAGE_KEYS.REGISTRATIONS, buildInitialRegistrations());
-    this.write(STORAGE_KEYS.DONATIONS, buildInitialDonations());
-    this.write(STORAGE_KEYS.MESSAGES, []);
-    this.write(STORAGE_KEYS.PROFILE, DEMO_PROFILE);
-    localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, 'volunteer');
-    localStorage.setItem(STORAGE_KEYS.ORGANIZER_NGO, 'ngo-1');
-    localStorage.setItem(STORAGE_KEYS.VERSION, DATA_VERSION);
-  }
-
-  // ---------- Profile (demo only — no password, no real login) ----------
+  /* ---------------- Profile ---------------- */
   getProfile() {
-    return this.read(STORAGE_KEYS.PROFILE, DEMO_PROFILE);
+    if (!this.user) return { name: '', email: '', phone: '', role: 'guest', isDemo: true };
+    const { name, email, phone, role, emailVerified } = this.user;
+    return { name, email, phone, role, emailVerified, isDemo: false };
   }
 
-  // Called by auth.js after login: the site then shows THIS account's activity
-  setAccountProfile(user) {
-    const profile = { name: user.name, email: user.email.toLowerCase(), phone: user.phone, role: user.role, accountId: user.id, isDemo: false };
-    this.write(STORAGE_KEYS.PROFILE, profile);
-    this.setCurrentRole(user.role);
-    return profile;
+  isLoggedIn() {
+    return Boolean(this.user);
   }
 
-  // Called after logout: go back to the demo profile
-  clearAccountProfile() {
-    this.write(STORAGE_KEYS.PROFILE, DEMO_PROFILE);
-    this.setCurrentRole('volunteer');
-  }
+  /* ---------------- Catalog (public) ---------------- */
+  getNGOs() { return this.catalog.ngos; }
+  getNGOById(id) { return this.catalog.ngos.find(n => n.id === id); }
+  getOpportunities() { return this.catalog.opportunities; }
+  getOpportunityById(id) { return this.catalog.opportunities.find(o => o.id === id); }
+  getCampaigns() { return this.catalog.campaigns; }
+  getCampaignById(id) { return this.catalog.campaigns.find(c => c.id === id); }
 
-  isMine(email) {
-    return (email || '').toLowerCase() === (this.getProfile().email || '').toLowerCase();
-  }
-
-  // ---------- NGOs ----------
-  getNGOs() {
-    return this.read(STORAGE_KEYS.NGOS, []);
-  }
-
-  getNGOById(id) {
-    return this.getNGOs().find(n => n.id === id);
-  }
-
-  // New NGOs always start as "Pending" — nobody is verified automatically.
-  addNGO(ngo) {
-    const ngos = this.getNGOs();
-    const newNgo = {
-      ...ngo,
-      id: this.newId('ngo'),
-      verified: false,
-      status: 'Pending Verification',
-      volunteersCount: 0,
-      rating: null,
-      submittedAt: todayISO()
-    };
-    ngos.push(newNgo);
-    this.write(STORAGE_KEYS.NGOS, ngos);
-    return newNgo;
-  }
-
-  // ---------- Opportunities ----------
-  getOpportunities() {
-    return this.read(STORAGE_KEYS.OPPORTUNITIES, []);
-  }
-
-  getOpportunityById(id) {
-    return this.getOpportunities().find(o => o.id === id);
-  }
-
-  addOpportunity(opp) {
-    const opps = this.getOpportunities();
-    const newOpp = {
-      volunteersRegistered: 0,
-      recurring: null,
-      remote: false,
-      status: 'Open',
-      createdByOrganizer: true,
-      ...opp,
-      id: this.newId('opp')
-    };
-    opps.unshift(newOpp);
-    this.write(STORAGE_KEYS.OPPORTUNITIES, opps);
-    return newOpp;
-  }
-
-  updateOpportunity(id, changes) {
-    const opps = this.getOpportunities();
-    const opp = opps.find(o => o.id === id);
-    if (!opp) return null;
-    Object.assign(opp, changes);
-    this.write(STORAGE_KEYS.OPPORTUNITIES, opps);
-    return opp;
-  }
-
-  deleteOpportunity(id) {
-    this.write(STORAGE_KEYS.OPPORTUNITIES, this.getOpportunities().filter(o => o.id !== id));
+  replaceInCatalog(listName, item) {
+    const list = this.catalog[listName];
+    const index = list.findIndex(x => x.id === item.id);
+    if (index >= 0) list[index] = item;
+    else list.unshift(item);
   }
 
   // Is this opportunity still joinable? Returns { ok, reason }
@@ -202,15 +131,6 @@ class StoreManager {
     if (!opp.recurring && opp.date && opp.date < todayISO()) return { ok: false, reason: 'Event has passed' };
     if ((opp.volunteersRegistered || 0) >= opp.volunteersNeeded) return { ok: false, reason: 'All spots filled' };
     return { ok: true, reason: '' };
-  }
-
-  // ---------- Campaigns ----------
-  getCampaigns() {
-    return this.read(STORAGE_KEYS.CAMPAIGNS, []);
-  }
-
-  getCampaignById(id) {
-    return this.getCampaigns().find(c => c.id === id);
   }
 
   getDaysLeft(campaign) {
@@ -222,180 +142,100 @@ class StoreManager {
     return campaign.status !== 'Closed' && (this.getDaysLeft(campaign) ?? 1) > 0;
   }
 
-  addCampaign(campaign) {
-    const campaigns = this.getCampaigns();
-    const newCampaign = {
-      ...campaign,
-      id: this.newId('camp'),
-      raised: 0,
-      supporters: 0,
-      goal: Number(campaign.goal),
-      featured: false,
-      status: 'Active',
-      createdByOrganizer: true
-    };
-    campaigns.unshift(newCampaign);
-    this.write(STORAGE_KEYS.CAMPAIGNS, campaigns);
-    return newCampaign;
+  /** The logged-in user's active registration for a drive, if any */
+  getMyRegistrationFor(opportunityId) {
+    return this.activity.registrations.find(r => r.opportunityId === opportunityId && r.status !== 'Cancelled');
   }
 
-  updateCampaign(id, changes) {
-    const campaigns = this.getCampaigns();
-    const campaign = campaigns.find(c => c.id === id);
-    if (!campaign) return null;
-    Object.assign(campaign, changes);
-    this.write(STORAGE_KEYS.CAMPAIGNS, campaigns);
-    return campaign;
+  /* ---------------- Volunteer & donor actions ---------------- */
+  async registerVolunteer({ opportunityId, skills, availability }) {
+    const res = await HC.api('POST', `/api/opportunities/${encodeURIComponent(opportunityId)}/registrations`, { skills, availability });
+    if (!res.ok) return failure(res);
+    this.replaceInCatalog('opportunities', res.data.opportunity);
+    this.activity.registrations = [res.data.registration, ...this.activity.registrations.filter(r => r.id !== res.data.registration.id)];
+    return { success: true, registration: res.data.registration, opportunity: res.data.opportunity };
   }
 
-  deleteCampaign(id) {
-    this.write(STORAGE_KEYS.CAMPAIGNS, this.getCampaigns().filter(c => c.id !== id));
+  async cancelRegistration(id) {
+    const res = await HC.api('POST', `/api/me/registrations/${encodeURIComponent(id)}/cancel`);
+    if (!res.ok) return failure(res);
+    this.activity.registrations = this.activity.registrations.map(r => (r.id === id ? res.data.registration : r));
+    await this.loadCatalog(); // spot counts changed
+    return { success: true };
   }
 
-  // DEMO donation: updates numbers in localStorage only. No payment happens.
-  recordDemoDonation(campaignId, amount, donorName, donorEmail) {
-    const campaigns = this.getCampaigns();
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (!campaign) return { success: false, error: 'Campaign not found.' };
-    if (!this.isCampaignOpen(campaign)) return { success: false, error: 'This campaign is no longer accepting support.' };
-
-    campaign.raised += amount;
-    campaign.supporters += 1;
-    this.write(STORAGE_KEYS.CAMPAIGNS, campaigns);
-
-    const donation = {
-      id: this.newId('don'),
-      campaignId: campaign.id,
-      campaignTitle: campaign.title,
-      ngoId: campaign.ngoId,
-      ngoName: campaign.ngoName,
-      category: campaign.category,
-      amount,
-      date: todayISO(),
-      donorName,
-      donorEmail: (donorEmail || '').toLowerCase(),
-      reference: 'DEMO-' + Math.floor(100000 + Math.random() * 900000),
-      isDemo: true
-    };
-    const donations = this.getAllDonations();
-    donations.unshift(donation);
-    this.write(STORAGE_KEYS.DONATIONS, donations);
-    return { success: true, campaign, donation };
+  // DEMO pledge: recorded on the server, but no money is charged
+  async recordPledge(campaignId, amount) {
+    const res = await HC.api('POST', `/api/campaigns/${encodeURIComponent(campaignId)}/pledges`, { amount });
+    if (!res.ok) return failure(res);
+    this.replaceInCatalog('campaigns', res.data.campaign);
+    this.activity.pledges = [res.data.pledge, ...this.activity.pledges];
+    return { success: true, donation: res.data.pledge, campaign: res.data.campaign };
   }
 
-  getAllDonations() {
-    return this.read(STORAGE_KEYS.DONATIONS, []);
+  async reportContent(targetType, targetId, reason, details) {
+    const res = await HC.api('POST', '/api/reports', { targetType, targetId, reason, details });
+    return res.ok ? { success: true, message: res.data.message } : failure(res);
   }
 
-  getUserDonations() {
-    return this.getAllDonations().filter(d => this.isMine(d.donorEmail));
+  async saveContactMessage(message) {
+    const res = await HC.api('POST', '/api/contact', message);
+    return res.ok ? { success: true } : failure(res);
   }
 
-  // ---------- Volunteer registrations ----------
-  getAllRegistrations() {
-    return this.read(STORAGE_KEYS.REGISTRATIONS, []);
+  getUserRegistrations() { return this.activity.registrations; }
+  getUserDonations() { return this.activity.pledges; }
+
+  /* ---------------- NGO console ---------------- */
+  async loadNgoConsole() {
+    const res = await HC.api('GET', '/api/ngo/console');
+    if (!res.ok) return failure(res);
+    this.ngoConsole = res.data;
+    return { success: true, console: res.data };
   }
 
-  getUserRegistrations() {
-    return this.getAllRegistrations().filter(r => this.isMine(r.email));
+  async ngoRequest(method, path, body) {
+    const res = await HC.api(method, `/api/ngo${path}`, body);
+    if (!res.ok) return failure(res);
+    await Promise.all([this.loadNgoConsole(), this.loadCatalog()]);
+    return { success: true, data: res.data };
   }
 
-  // Returns { success, registration } or { success: false, error }
-  registerVolunteer(data) {
-    const opps = this.getOpportunities();
-    const opp = opps.find(o => o.id === data.opportunityId);
-    if (!opp) return { success: false, error: 'Opportunity not found.' };
+  submitOrganization(data) { return this.ngoRequest('POST', '/organization', data); }
+  createOpportunity(data) { return this.ngoRequest('POST', '/opportunities', data); }
+  setOpportunityStatus(id, status) { return this.ngoRequest('PATCH', `/opportunities/${encodeURIComponent(id)}`, { status }); }
+  deleteOpportunity(id) { return this.ngoRequest('DELETE', `/opportunities/${encodeURIComponent(id)}`); }
+  createCampaign(data) { return this.ngoRequest('POST', '/campaigns', data); }
+  setCampaignStatus(id, status) { return this.ngoRequest('PATCH', `/campaigns/${encodeURIComponent(id)}`, { status }); }
+  deleteCampaign(id) { return this.ngoRequest('DELETE', `/campaigns/${encodeURIComponent(id)}`); }
+  setRegistrationStatus(id, status) { return this.ngoRequest('PATCH', `/registrations/${encodeURIComponent(id)}`, { status }); }
 
-    const availability = this.getOpportunityAvailability(opp);
-    if (!availability.ok) return { success: false, error: `Registration closed: ${availability.reason}.` };
-
-    const registrations = this.getAllRegistrations();
-    const duplicate = registrations.some(r =>
-      r.opportunityId === opp.id && r.email.toLowerCase() === data.email.toLowerCase() && r.status !== 'Cancelled');
-    if (duplicate) return { success: false, error: 'This email is already registered for this opportunity.' };
-
-    const registration = {
-      id: this.newId('reg'),
-      opportunityId: opp.id,
-      opportunityTitle: opp.title,
-      ngoId: opp.ngoId,
-      ngoName: opp.ngoName,
-      category: opp.category,
-      eventDate: opp.date,
-      hours: opp.hours || 4,
-      name: data.name,
-      email: data.email.toLowerCase(),
-      phone: data.phone,
-      skills: data.skills,
-      availability: data.availability,
-      dateApplied: todayISO(),
-      status: 'Registered'
-    };
-    registrations.unshift(registration);
-    this.write(STORAGE_KEYS.REGISTRATIONS, registrations);
-
-    opp.volunteersRegistered = (opp.volunteersRegistered || 0) + 1;
-    this.write(STORAGE_KEYS.OPPORTUNITIES, opps);
-
-    return { success: true, registration, opportunity: opp };
-  }
-
-  // Organizer action: Registered -> Attended / No-show / Cancelled
-  setRegistrationStatus(id, status) {
-    const registrations = this.getAllRegistrations();
-    const reg = registrations.find(r => r.id === id);
-    if (!reg) return { success: false, error: 'Registration not found.' };
-
-    // You can't attend (or miss) an event that hasn't happened yet
-    if ((status === 'Attended' || status === 'No-show') && reg.eventDate > todayISO()) {
-      return { success: false, error: 'Attendance can be marked on or after the event date.' };
-    }
-
-    const wasActive = reg.status !== 'Cancelled';
-    reg.status = status;
-    this.write(STORAGE_KEYS.REGISTRATIONS, registrations);
-
-    // Free up the spot when a registration is cancelled
-    if (wasActive && status === 'Cancelled') {
-      const opp = this.getOpportunityById(reg.opportunityId);
-      if (opp) this.updateOpportunity(opp.id, { volunteersRegistered: Math.max(0, opp.volunteersRegistered - 1) });
-    }
-    return { success: true, registration: reg };
-  }
-
-  // ---------- Contact messages (stored locally; NOT emailed) ----------
-  saveContactMessage(message) {
-    const messages = this.read(STORAGE_KEYS.MESSAGES, []);
-    const saved = { ...message, id: this.newId('msg'), date: todayISO() };
-    messages.unshift(saved);
-    this.write(STORAGE_KEYS.MESSAGES, messages);
-    return saved;
-  }
-
-  // ---------- Matching preferences ----------
+  /* ---------------- Matching preferences (this browser only) ---------------- */
   getPreferences() {
-    return this.read(STORAGE_KEYS.PREFERENCES, null);
+    try {
+      return JSON.parse(localStorage.getItem(PREFERENCES_KEY)) || null;
+    } catch {
+      return null;
+    }
   }
 
   savePreferences(prefs) {
-    this.write(STORAGE_KEYS.PREFERENCES, prefs);
+    try {
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
+    } catch {
+      /* storage blocked: preferences just aren't remembered */
+    }
   }
 
-  // ---------- Derived impact stats (always calculated, never stored) ----------
+  /* ---------------- Derived impact stats (always calculated) ---------------- */
   getUserStats() {
     const registrations = this.getUserRegistrations();
     const donations = this.getUserDonations();
     const attended = registrations.filter(r => r.status === 'Attended');
     const upcoming = registrations.filter(r => r.status === 'Registered');
-
-    const causes = new Set([
-      ...attended.map(r => r.category),
-      ...donations.map(d => d.category)
-    ].filter(Boolean));
-
-    const itemsCreated =
-      this.getCampaigns().filter(c => c.createdByOrganizer).length +
-      this.getOpportunities().filter(o => o.createdByOrganizer).length;
+    const causes = new Set([...attended.map(r => r.category), ...donations.map(d => d.category)].filter(Boolean));
+    const consoleData = this.ngoConsole;
+    const itemsCreated = consoleData ? consoleData.opportunities.length + consoleData.campaigns.length : 0;
 
     return {
       volunteerHours: attended.reduce((sum, r) => sum + (Number(r.hours) || 0), 0),
@@ -415,18 +255,13 @@ class StoreManager {
     return BADGE_RULES.map(rule => {
       const { current, target } = rule.progress(stats);
       return {
-        id: rule.id,
-        title: rule.title,
-        icon: rule.icon,
-        description: rule.description,
-        current: Math.min(current, target),
-        target,
-        unlocked: current >= target
+        id: rule.id, title: rule.title, icon: rule.icon, description: rule.description,
+        current: Math.min(current, target), target, unlocked: current >= target
       };
     });
   }
 
-  // Last 6 months of attended hours + donations, for the chart
+  // Last 6 months of attended hours + pledges, for the chart
   getMonthlyHistory(monthCount = 6) {
     const registrations = this.getUserRegistrations().filter(r => r.status === 'Attended');
     const donations = this.getUserDonations();
@@ -439,37 +274,18 @@ class StoreManager {
         key,
         label: d.toLocaleDateString('en-GB', { month: 'short' }),
         hours: registrations.filter(r => (r.eventDate || '').startsWith(key)).reduce((s, r) => s + r.hours, 0),
-        donation: donations.filter(d2 => (d2.date || '').startsWith(key)).reduce((s, d2) => s + d2.amount, 0)
+        donation: donations.filter(x => (x.date || '').startsWith(key)).reduce((s, x) => s + x.amount, 0)
       });
     }
     return months;
   }
 
-  // How the user's activity is spread across causes (hours + donations count as activities)
   getCauseDistribution() {
     const counts = {};
     this.getUserRegistrations().filter(r => r.status === 'Attended')
       .forEach(r => { counts[r.category] = (counts[r.category] || 0) + 1; });
-    this.getUserDonations()
-      .forEach(d => { counts[d.category] = (counts[d.category] || 0) + 1; });
+    this.getUserDonations().forEach(d => { counts[d.category] = (counts[d.category] || 0) + 1; });
     return counts;
-  }
-
-  // ---------- Role & organizer identity (demo switches) ----------
-  getCurrentRole() {
-    return localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE) || 'volunteer';
-  }
-
-  setCurrentRole(role) {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, role);
-  }
-
-  getOrganizerNgoId() {
-    return localStorage.getItem(STORAGE_KEYS.ORGANIZER_NGO) || 'ngo-1';
-  }
-
-  setOrganizerNgoId(id) {
-    localStorage.setItem(STORAGE_KEYS.ORGANIZER_NGO, id);
   }
 }
 

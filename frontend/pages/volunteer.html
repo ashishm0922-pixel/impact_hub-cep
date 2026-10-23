@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=10">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=10">
+  <link rel="stylesheet" href="../assets/css/style.css?v=11">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=11">
 </head>
 <body>
 
@@ -115,23 +115,23 @@
         <div class="modal-body">
           <input type="hidden" id="regOppId">
           <div class="demo-callout">
-            <i class="fas fa-info-circle"></i> Your registration is saved in this browser and appears in the organizer portal.
-            Hours count towards your impact only after the organizer marks you as <strong>Attended</strong>.
+            <i class="fas fa-info-circle"></i> The NGO will see your name, email and mobile number on their participant list.
+            Your hours count once they mark you as <strong>Attended</strong> after the event.
           </div>
-          <div class="form-group">
-            <label for="regName">Your Full Name *</label>
-            <input type="text" class="form-control" id="regName" autocomplete="name" placeholder="e.g. Aarav Sharma">
-          </div>
-          <div class="form-group">
-            <label for="regEmail">Email Address *</label>
-            <input type="email" class="form-control" id="regEmail" autocomplete="email" placeholder="name@example.com">
-          </div>
-          <div class="form-group">
-            <label for="regPhone">Mobile number *</label>
-            <div class="input-prefix-wrap">
-              <span class="input-prefix">+91</span>
-              <input type="tel" class="form-control" id="regPhone" autocomplete="tel-national" inputmode="numeric" placeholder="10-digit mobile number">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="regName">Your name</label>
+              <input type="text" class="form-control" id="regName" readonly>
             </div>
+            <div class="form-group">
+              <label for="regPhone">Mobile number</label>
+              <input type="tel" class="form-control" id="regPhone" readonly>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input type="email" class="form-control" id="regEmail" readonly>
+            <div class="form-hint">These come from your account.</div>
           </div>
           <div class="form-group">
             <label for="regSkills">Relevant Skills / Interests</label>
@@ -166,11 +166,12 @@
   </footer>
 
   <!-- Scripts (order matters: core first, then features, then this page) -->
-  <script src="../assets/js/core/seed-data.js?v=10"></script>
-  <script src="../assets/js/core/store.js?v=10"></script>
-  <script src="../assets/js/core/app.js?v=10"></script>
-  <script src="../assets/js/core/auth.js?v=10"></script>
-  <script src="../assets/js/core/router.js?v=10"></script>
-  <script src="../assets/js/pages/volunteer.js?v=10"></script>
+  <script src="../assets/js/core/constants.js?v=11"></script>
+  <script src="../assets/js/core/app.js?v=11"></script>
+  <script src="../assets/js/core/store.js?v=11"></script>
+  <script src="../assets/js/core/auth.js?v=11"></script>
+  <script src="../assets/js/core/router.js?v=11"></script>
+  <script src="../assets/js/pages/volunteer.js?v=11"></script>
+  <script src="../assets/js/features/report.js?v=11"></script>
 </body>
 </html>

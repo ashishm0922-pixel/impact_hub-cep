@@ -208,9 +208,19 @@ const pageCleanups = [];
 
 // Run fn once the page content is ready. If it already is (no-reload navigation), run it
 // right after the current script finishes, so all of the script's variables exist first.
+// Page code also waits until the server data (HCStore) is loaded and fresh.
+let serverWarningShown = false;
 HC.ready = function(fn) {
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
-  else queueMicrotask(fn);
+  const run = async () => {
+    if (window.HCStore?.ensureFresh) await window.HCStore.ensureFresh();
+    if (window.HCStore?.loadError && !serverWarningShown) {
+      serverWarningShown = true;
+      window.showToast?.(window.HCStore.loadError, 'error', 'fas fa-wifi');
+    }
+    fn();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
+  else queueMicrotask(run);
 };
 
 // addEventListener that is automatically removed when leaving the page

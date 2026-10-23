@@ -111,7 +111,8 @@
               </div>
 
               ${open
-                ? `<button class="btn btn-green" style="width: 100%;" data-donate="${e(c.id)}"><i class="fas fa-heart"></i> Support This Cause</button>`
+                ? `<button class="btn btn-green" style="width: 100%;" data-donate="${e(c.id)}"><i class="fas fa-heart"></i> Support This Cause</button>
+                   <button type="button" class="report-link" data-report="campaign" data-id="${e(c.id)}" data-name="${e(c.title)}"><i class="fas fa-flag"></i> Report</button>`
                 : `<button class="btn btn-secondary" style="width: 100%;" disabled><i class="fas fa-lock"></i> No longer accepting support</button>`}
             </div>
           </div>
@@ -178,6 +179,7 @@
 
   function openDonationModal(campId, prefillAmount = null) {
     const form = document.getElementById('donationForm');
+    if (!HC.requireLogin('support a campaign')) return;
     if (fillCampaignSelect(campId) === 0) {
       window.showToast('There are no open campaigns right now.', 'info', 'fas fa-info-circle');
       return;
@@ -210,8 +212,6 @@
   function setupDonationFlow() {
     const form = document.getElementById('donationForm');
     const customInput = document.getElementById('customDonAmount');
-    const { validators } = window.HC;
-
     document.querySelectorAll('.don-tier-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         customInput.value = btn.dataset.val;
@@ -223,27 +223,24 @@
     customInput.addEventListener('input', (e) => setActiveTier(e.target.value));
     document.getElementById('donCampSelect').addEventListener('change', updateModalHeader);
 
-    form.addEventListener('submit', (e) => {
+    const submit = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const nameInput = document.getElementById('donorName');
-      const emailInput = document.getElementById('donorEmail');
-
-      const valid = window.HC.validateFields([
-        { input: customInput, checks: [validateAmount] },
-        { input: nameInput, checks: [validators.name] },
-        { input: emailInput, checks: [validators.email] }
-      ]);
+      if (submit.disabled) return;
+      const valid = window.HC.validateFields([{ input: customInput, checks: [validateAmount] }]);
       if (!valid) return;
 
-      const result = window.HCStore.recordDemoDonation(
+      HC.setLoading(submit, true, 'Recording...');
+      const result = await window.HCStore.recordPledge(
         document.getElementById('donCampSelect').value,
-        Number(customInput.value),
-        nameInput.value.trim(),
-        emailInput.value.trim()
+        Number(customInput.value)
       );
+      HC.setLoading(submit, false);
 
       if (!result.success) {
-        window.showToast(result.error, 'error', 'fas fa-exclamation-circle');
+        if (!HC.showServerErrors({ amount: customInput }, result)) {
+          window.showToast(result.error, 'error', 'fas fa-exclamation-circle');
+        }
         return;
       }
 

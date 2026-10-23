@@ -15,8 +15,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=10">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=10">
+  <link rel="stylesheet" href="../assets/css/style.css?v=11">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=11">
 </head>
 <body>
 
@@ -64,41 +64,26 @@
 
     <!-- Panel -->
     <section id="adminPanelView" hidden aria-labelledby="adminPanelTitle">
-      <div class="admin-topbar">
-        <div>
-          <h2 id="adminPanelTitle" style="margin-bottom: 0.2rem;">Users</h2>
-          <p style="font-size: 0.9rem; margin: 0;" id="adminPanelHint">Manage accounts: see who verified their email, suspend or re-activate users.</p>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline" id="adminRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
-      </div>
-
-      <div class="admin-status-tabs" id="adminStatusTabs" role="tablist" aria-label="Filter users by status">
-        <button type="button" class="admin-status-tab active" data-status="pending"><strong data-count="pending">0</strong><span>⏳ Pending</span></button>
-        <button type="button" class="admin-status-tab" data-status="approved"><strong data-count="approved">0</strong><span>✅ Approved</span></button>
-        <button type="button" class="admin-status-tab" data-status="rejected"><strong data-count="rejected">0</strong><span>❌ Rejected</span></button>
-        <button type="button" class="admin-status-tab" data-status="suspended"><strong data-count="suspended">0</strong><span>⛔ Suspended</span></button>
-        <button type="button" class="admin-status-tab" data-status=""><strong data-count="all">0</strong><span>👥 All users</span></button>
-      </div>
-
-      <div class="admin-toolbar">
-        <input type="search" class="form-control" id="adminSearch" placeholder="Search name, email or mobile..." maxlength="100" aria-label="Search users">
-      </div>
-
-      <div class="data-table-container">
-        <div class="table-scroll">
-          <table class="custom-table">
-            <thead>
-              <tr><th>User</th><th>Mobile</th><th>Role</th><th>Email</th><th>Signed up</th><th>Status</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="adminUsersBody"></tbody>
-          </table>
-        </div>
-        <div class="admin-pagination">
-          <span id="adminPageInfo"></span>
-          <button type="button" class="btn btn-xs btn-outline" id="adminPrevPage">‹ Prev</button>
-          <button type="button" class="btn btn-xs btn-outline" id="adminNextPage">Next ›</button>
+      <div class="dash-profile">
+        <div class="dash-profile-main">
+          <div class="dash-avatar"><i class="fas fa-user-shield"></i></div>
+          <div>
+            <h1 class="dash-name" id="adminPanelTitle"><span id="adminDisplayName">Admin</span> <span class="dash-role">Platform Administrator</span></h1>
+            <div class="dash-meta"><span><i class="fas fa-shield-alt"></i> Admin session ends automatically after a few hours</span></div>
+          </div>
         </div>
       </div>
+
+      <nav class="dash-tabs" role="tablist" aria-label="Admin sections">
+        <button type="button" class="dash-tab active" data-admin-tab="overview"><i class="fas fa-chart-line"></i> Admin Overview</button>
+        <button type="button" class="dash-tab" data-admin-tab="ngos"><i class="fas fa-check-double"></i> Verification Queue <span class="tab-count" data-count-badge="ngos"></span></button>
+        <button type="button" class="dash-tab" data-admin-tab="users"><i class="fas fa-users"></i> Users</button>
+        <button type="button" class="dash-tab" data-admin-tab="audit"><i class="fas fa-history"></i> Audit Logs</button>
+        <button type="button" class="dash-tab" data-admin-tab="leaderboard"><i class="fas fa-trophy"></i> Leaderboard</button>
+        <button type="button" class="dash-tab" data-admin-tab="reports"><i class="fas fa-flag"></i> Flagged Content <span class="tab-count" data-count-badge="reports"></span></button>
+      </nav>
+
+      <div id="adminTabContent" aria-live="polite"></div>
     </section>
   </main>
 
@@ -113,8 +98,13 @@
         <div class="modal-body">
           <p id="reasonIntro" style="font-size: 0.9rem;"></p>
           <div class="form-group">
-            <label for="reasonText">Reason (shown to the user when they try to log in) *</label>
+            <label for="reasonText" id="reasonLabel">Reason *</label>
             <textarea class="form-control" id="reasonText" rows="3" maxlength="200"></textarea>
+          </div>
+          <div class="form-group" id="reauthGroup">
+            <label for="reauthPassword">Your admin password *</label>
+            <input type="password" class="form-control" id="reauthPassword" autocomplete="current-password" maxlength="128">
+            <div class="form-hint">Required to confirm this action.</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -126,9 +116,8 @@
   </div>
 
   <!-- Scripts (no auth.js here: admins use a separate login) -->
-  <script src="../assets/js/core/seed-data.js?v=10"></script>
-  <script src="../assets/js/core/store.js?v=10"></script>
-  <script src="../assets/js/core/app.js?v=10"></script>
-  <script src="../assets/js/pages/admin.js?v=10"></script>
+  <script src="../assets/js/core/constants.js?v=11"></script>
+  <script src="../assets/js/core/app.js?v=11"></script>
+  <script src="../assets/js/pages/admin.js?v=11"></script>
 </body>
 </html>

@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=10">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=10">
+  <link rel="stylesheet" href="../assets/css/style.css?v=11">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=11">
 </head>
 <body>
 
@@ -189,16 +189,17 @@
             <div class="form-hint">Between ₹10 and ₹10,00,000, whole rupees only.</div>
           </div>
 
-          <div class="form-group">
-            <label for="donorName">Donor Name *</label>
-            <input type="text" class="form-control" id="donorName" autocomplete="name" placeholder="Your name">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="donorName">Donor</label>
+              <input type="text" class="form-control" id="donorName" readonly>
+            </div>
+            <div class="form-group">
+              <label for="donorEmail">Email</label>
+              <input type="email" class="form-control" id="donorEmail" readonly>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label for="donorEmail">Email *</label>
-            <input type="email" class="form-control" id="donorEmail" autocomplete="email" placeholder="name@example.com">
-            <div class="form-hint">Used to show this pledge on your Impact page. No email is sent.</div>
-          </div>
+          <div class="form-hint">These come from your account. The pledge appears on your dashboard and the NGO's supporter list.</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('donationModal')">Cancel</button>
@@ -238,12 +239,13 @@
   </footer>
 
   <!-- Scripts (order matters: core first, then features, then this page) -->
-  <script src="../assets/js/core/seed-data.js?v=10"></script>
-  <script src="../assets/js/core/store.js?v=10"></script>
-  <script src="../assets/js/core/app.js?v=10"></script>
-  <script src="../assets/js/core/auth.js?v=10"></script>
-  <script src="../assets/js/core/router.js?v=10"></script>
-  <script src="../assets/js/features/impact-calculator.js?v=10"></script>
-  <script src="../assets/js/pages/campaigns.js?v=10"></script>
+  <script src="../assets/js/core/constants.js?v=11"></script>
+  <script src="../assets/js/core/app.js?v=11"></script>
+  <script src="../assets/js/core/store.js?v=11"></script>
+  <script src="../assets/js/core/auth.js?v=11"></script>
+  <script src="../assets/js/core/router.js?v=11"></script>
+  <script src="../assets/js/features/impact-calculator.js?v=11"></script>
+  <script src="../assets/js/pages/campaigns.js?v=11"></script>
+  <script src="../assets/js/features/report.js?v=11"></script>
 </body>
 </html>

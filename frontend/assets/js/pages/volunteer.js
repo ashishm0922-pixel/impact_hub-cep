@@ -88,9 +88,12 @@
               <p style="font-size: 0.9rem; margin-bottom: 1.25rem;">${e(opp.description)}</p>
             </div>
 
-            ${status.ok
-              ? `<button class="btn btn-primary" style="width: 100%;" data-join="${e(opp.id)}"><i class="fas fa-user-plus"></i> Join Opportunity</button>`
-              : `<button class="btn btn-secondary" style="width: 100%;" disabled><i class="fas fa-ban"></i> ${e(status.reason)}</button>`}
+            ${window.HCStore.getMyRegistrationFor(opp.id)
+              ? `<button class="btn btn-green" style="width: 100%;" disabled><i class="fas fa-check-circle"></i> You're registered</button>`
+              : status.ok
+                ? `<button class="btn btn-primary" style="width: 100%;" data-join="${e(opp.id)}"><i class="fas fa-user-plus"></i> Join Opportunity</button>`
+                : `<button class="btn btn-secondary" style="width: 100%;" disabled><i class="fas fa-ban"></i> ${e(status.reason)}</button>`}
+            <button type="button" class="report-link" data-report="opportunity" data-id="${e(opp.id)}" data-name="${e(opp.title)}"><i class="fas fa-flag"></i> Report</button>
           </div>
         </div>
       `;
@@ -145,11 +148,16 @@
       window.showToast(`Registration closed: ${status.reason}.`, 'error', 'fas fa-ban');
       return;
     }
+    if (!HC.requireLogin('join a drive')) return;
+    if (window.HCStore.getProfile().role === 'ngo') {
+      window.showToast('NGO accounts manage drives. Use a volunteer account to join one.', 'info', 'fas fa-info-circle');
+      return;
+    }
 
     const form = document.getElementById('volunteerRegForm');
     window.HC.clearFieldErrors(form);
 
-    // Pre-fill from the logged-in account (or the demo profile when logged out)
+    // Your account details are used (shown read-only)
     const profile = window.HCStore.getProfile();
     document.getElementById('regName').value = profile.name || '';
     document.getElementById('regEmail').value = profile.email || '';
@@ -165,50 +173,38 @@
   function setupRegistrationForm() {
     const form = document.getElementById('volunteerRegForm');
     if (!form) return;
-    const { validators } = window.HC;
+    const submit = form.querySelector('button[type="submit"]');
 
-    // Keep only digits; accept pasted "+91 98765 43210" / "09876543210"
-    const phoneField = document.getElementById('regPhone');
-    phoneField.addEventListener('input', () => {
-      let digits = phoneField.value.replace(/\D/g, '');
-      if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
-      if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
-      if (phoneField.value !== digits) phoneField.value = digits;
-    });
-
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const nameInput = document.getElementById('regName');
-      const emailInput = document.getElementById('regEmail');
-      const phoneInput = document.getElementById('regPhone');
+      if (submit.disabled) return;
       const skillsInput = document.getElementById('regSkills');
-
       const valid = window.HC.validateFields([
-        { input: nameInput, checks: [validators.name] },
-        { input: emailInput, checks: [validators.email] },
-        { input: phoneInput, checks: [validators.phone] },
         { input: skillsInput, checks: [v => (v.length <= 200 ? '' : 'Keep skills under 200 characters.')] }
       ]);
       if (!valid) return;
 
-      const result = window.HCStore.registerVolunteer({
+      HC.setLoading(submit, true, 'Registering...');
+      const result = await window.HCStore.registerVolunteer({
         opportunityId: document.getElementById('regOppId').value,
-        name: nameInput.value.trim(),
-        email: emailInput.value.trim(),
-        phone: phoneInput.value.trim(),
         skills: skillsInput.value.trim(),
         availability: document.getElementById('regAvailability').value
       });
+      HC.setLoading(submit, false);
 
       if (!result.success) {
         window.showToast(result.error, 'error', 'fas fa-exclamation-circle');
+        if (result.code === 'FULL' || result.code === 'CLOSED') renderOpportunities();
         return;
       }
 
       window.closeModal('volunteerModal');
       form.reset();
-      window.showToast(`🎉 You're registered for "${result.opportunity.title}" on ${window.HC.formatDate(result.opportunity.date)}.`, 'success');
+      window.showToast(`🎉 You're registered for "${result.opportunity.title}" on ${window.HC.formatDate(result.opportunity.date)}. The NGO can now see you on their participant list.`, 'success');
       renderOpportunities();
     });
   }
+
+  // Re-draw when someone logs in/out (the "You're registered" buttons depend on it)
+  HC.onPage(document, 'hc:auth-changed', renderOpportunities);
 })();
