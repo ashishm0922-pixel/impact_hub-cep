@@ -130,7 +130,7 @@ function buildAuthModal() {
   modal.className = 'modal-backdrop';
   modal.id = 'authModal';
   modal.innerHTML = `
-    <div class="modal-card auth-card" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="modal-card auth-card" style="max-width: 520px;" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
       <div class="modal-header">
         <h3 id="authModalTitle" style="font-size: 1.2rem;"><i class="fas fa-user-circle" style="color: var(--accent-gold-hover);"></i> Welcome to HopeConnect</h3>
         <button class="modal-close-btn" aria-label="Close">&times;</button>
@@ -166,15 +166,17 @@ function buildAuthModal() {
             <label for="signupName">Full name *</label>
             <input type="text" class="form-control" id="signupName" autocomplete="name" maxlength="60" placeholder="e.g. Neha Kulkarni">
           </div>
-          <div class="form-group">
-            <label for="signupEmail">Email *</label>
-            <input type="email" class="form-control" id="signupEmail" autocomplete="email" maxlength="254" placeholder="name@example.com">
-          </div>
-          <div class="form-group">
-            <label for="signupPhone">Mobile number *</label>
-            <div class="input-prefix-wrap">
-              <span class="input-prefix">+91</span>
-              <input type="tel" class="form-control" id="signupPhone" autocomplete="tel-national" inputmode="numeric" placeholder="10-digit mobile number">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="signupEmail">Email *</label>
+              <input type="email" class="form-control" id="signupEmail" autocomplete="email" maxlength="254" placeholder="name@example.com">
+            </div>
+            <div class="form-group">
+              <label for="signupPhone">Mobile number *</label>
+              <div class="input-prefix-wrap">
+                <span class="input-prefix">+91</span>
+                <input type="tel" class="form-control" id="signupPhone" autocomplete="tel-national" inputmode="numeric" placeholder="10 digits">
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -185,13 +187,15 @@ function buildAuthModal() {
               <option value="ngo">🏢 NGO / Organizer</option>
             </select>
           </div>
-          ${passwordField('signupPassword', 'Password *', 'new-password')}
+          <div class="form-row-2">
+            ${passwordField('signupPassword', 'Password *', 'new-password')}
+            ${passwordField('signupConfirm', 'Confirm password *', 'new-password')}
+          </div>
           <ul class="password-rules" id="passwordRules" aria-live="polite">
             <li data-rule="length">At least 8 characters</li>
             <li data-rule="letter">At least one letter</li>
             <li data-rule="number">At least one number</li>
           </ul>
-          ${passwordField('signupConfirm', 'Confirm password *', 'new-password')}
           <p class="form-hint"><i class="fas fa-user-shield"></i> New accounts are reviewed by an admin before you can log in.</p>
         </div>
         <div class="modal-footer auth-footer">

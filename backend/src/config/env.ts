@@ -18,7 +18,10 @@ export const env = {
   port: toNumber(process.env.PORT, 4000),
 
   // MongoDB Atlas connection string, e.g. mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/hopeconnect
-  mongoUri: process.env.MONGODB_URI || '',
+  mongoUri: (process.env.MONGODB_URI || '').trim(),
+
+  // Optional DNS servers for looking up the Atlas address, e.g. "8.8.8.8,1.1.1.1"
+  dnsServers: (process.env.DNS_SERVERS || '').split(',').map(s => s.trim()).filter(Boolean),
 
   // Extra frontend origins allowed to call the API (the backend's own origin is always allowed)
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5500')

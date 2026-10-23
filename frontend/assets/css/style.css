@@ -2445,3 +2445,122 @@ textarea.form-control {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* ==========================================================================
+   v5: Modal layout fix — tall forms were cut off with no way to scroll.
+   The card is a flex column capped at the screen height; any <form> (or
+   panel) inside it must also be a flex column that is allowed to shrink,
+   so that .modal-body becomes the part that scrolls and the footer
+   (with the submit button) always stays visible.
+   ========================================================================== */
+.modal-backdrop {
+  padding: 1rem;
+}
+
+.modal-card {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem); /* dvh = real visible height on phones (address bar aware) */
+}
+
+.modal-card > form,
+.modal-card > .auth-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-card > form[hidden],
+.modal-card > .auth-form[hidden] {
+  display: none;
+}
+
+.modal-header,
+.modal-footer,
+.auth-tabs {
+  flex-shrink: 0;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+/* Compact sign-up / login layout */
+.auth-card .modal-header {
+  padding: 1.1rem 1.5rem;
+}
+
+.auth-card .modal-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.auth-card .modal-footer {
+  padding: 1rem 1.5rem;
+}
+
+.auth-card .form-group {
+  margin-bottom: 0.9rem;
+}
+
+.auth-card .form-control {
+  padding: 0.65rem 0.9rem;
+}
+
+.auth-card .password-wrap .form-control {
+  padding-right: 2.6rem;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.form-row-2 > .form-group {
+  min-width: 0;
+}
+
+.auth-card .password-rules {
+  margin: -0.4rem 0 0.9rem 0;
+}
+
+.auth-card .form-hint {
+  margin: 0;
+}
+
+/* v5: small layout helpers (replace inline styles that didn't wrap on phones) */
+.filter-select-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.filter-select-label .form-control {
+  width: auto;
+  max-width: 100%;
+  padding: 0.45rem 0.8rem;
+}
+
+.contact-form-card {
+  padding: 2.5rem;
+}
+
+.form-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.portal-sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}

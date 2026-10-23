@@ -27,6 +27,12 @@ npm run dev
 ```
 You should see `Connected to MongoDB.` and `Admin account "admin" created.`
 
+**Check the connection any time:** `npm run db:check` → `✔ Connected to MongoDB ... Database: hopeconnect`.
+
+> **Error `querySrv ECONNREFUSED`?** Your network/VPN/antivirus blocks the DNS lookup Atlas needs. The app automatically retries with public DNS; to force it, add `DNS_SERVERS=8.8.8.8,1.1.1.1` to `.env`.
+>
+> **Error `bad auth`?** The username/password in `MONGODB_URI` is wrong. Most often `<db_password>` was left in instead of the real password.
+
 > **No Atlas yet?** Run `npm run dev:local`. It starts a local MongoDB for you (data saved in `backend/.local-mongo/`). Good for trying things out; use Atlas for real data.
 
 ## 2. Admin account
@@ -70,6 +76,7 @@ Set `AUTO_APPROVE_USERS=true` in `.env` only if you ever want sign-ups to be app
 |---|---|
 | `npm run dev` | Start with auto-reload, using `MONGODB_URI` (Atlas) |
 | `npm run dev:local` | Start with a local MongoDB (no Atlas needed) |
+| `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
 | `npm run seed` | Add sample NGOs, drives and a campaign |
 | `npm test` | 43 automated tests (uses a temporary in-memory MongoDB) |
