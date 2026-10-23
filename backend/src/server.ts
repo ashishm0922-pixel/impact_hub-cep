@@ -1,4 +1,5 @@
 import 'dotenv/config'; // must be first: loads backend/.env before config/env.ts reads it
+import os from 'node:os';
 import { createApp } from './app';
 import { env } from './config/env';
 import { connectDb } from './db/connect';
@@ -22,6 +23,13 @@ async function ensureAdmin() {
   }
 }
 
+function lanAddresses() {
+  return Object.values(os.networkInterfaces())
+    .flat()
+    .filter(i => i && i.family === 'IPv4' && !i.internal)
+    .map(i => i!.address);
+}
+
 export async function startServer(mongoUri = env.mongoUri) {
   if (mongoUri) {
     await connectDb(mongoUri);
@@ -34,6 +42,9 @@ export async function startServer(mongoUri = env.mongoUri) {
   const app = createApp();
   return app.listen(env.port, () => {
     console.log(`HopeConnect is running:  http://localhost:${env.port}`);
+    // Addresses for phones/other computers on the same Wi-Fi
+    for (const ip of lanAddresses()) console.log(`On your Wi-Fi network:   http://${ip}:${env.port}`);
+    console.log(`Links in emails use:     ${env.appUrl}`);
     console.log(`Admin panel:             http://localhost:${env.port}/pages/admin.html`);
   });
 }
