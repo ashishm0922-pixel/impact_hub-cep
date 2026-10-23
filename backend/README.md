@@ -9,18 +9,28 @@ The frontend still uses `localStorage` and does not call this API yet.
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma   Database tables (User, Ngo, Opportunity, Registration, Campaign, Donation, ContactMessage)
-│   └── seed.ts         Sample NGOs, drives and a campaign
+│   ├── schema.prisma          Tables: User, Ngo, Opportunity, Registration, Campaign, Donation, ContactMessage
+│   └── seed.ts                Sample NGOs, drives and a campaign
 ├── src/
-│   ├── server.ts       Starts the HTTP server (loads .env)
-│   ├── app.ts          Express app: security headers, CORS, JSON, routes, errors
-│   ├── routes/api.ts   All /api routes
-│   ├── lib/db.ts       Shared Prisma client
-│   ├── lib/http.ts     HttpError + JSON error handler
-│   ├── lib/validation.ts  Zod schemas for request bodies
-│   └── app.test.ts     Tests (run without a database)
-├── .env.example
-└── tsconfig.json
+│   ├── server.ts              Loads .env and starts the HTTP server
+│   ├── app.ts                 Express app: security headers, CORS, JSON, routes, errors
+│   ├── config/env.ts          Every environment variable, read in one place
+│   ├── lib/prisma.ts          Shared Prisma client + requireDb()
+│   ├── middlewares/
+│   │   └── error-handler.ts   404 handler + JSON error handler
+│   ├── utils/http-error.ts    HttpError(status, message)
+│   ├── shared/schemas.ts      Validation shared by modules (category, list query, email)
+│   ├── routes/index.ts        Mounts every module under /api
+│   └── modules/               One folder per feature
+│       ├── health/            health.routes.ts
+│       ├── ngos/              ngos.routes.ts, ngos.schemas.ts
+│       ├── opportunities/     opportunities.routes.ts, opportunities.schemas.ts
+│       ├── campaigns/         campaigns.routes.ts
+│       └── contact/           contact.routes.ts, contact.schemas.ts
+├── tests/app.test.ts          Tests (run without a database)
+├── tsconfig.json              Type-checking (src + tests + prisma)
+├── tsconfig.build.json        Build (src → dist)
+└── .env.example
 ```
 
 ## Setup
@@ -50,7 +60,7 @@ No local Postgres? A free hosted database (e.g. Neon or Supabase) works too: pas
 |---|---|
 | `npm run dev` | Start with auto-reload (tsx) |
 | `npm run build` / `npm start` | Compile to `dist/` and run |
-| `npm run typecheck` | TypeScript check |
+| `npm run typecheck` | TypeScript check (src, tests, seed) |
 | `npm test` | Run tests (no database needed) |
 
 ## Endpoints
@@ -84,4 +94,4 @@ Never mark a payment successful based on a message from the browser.
 1. Authentication (hashed passwords or OAuth, httpOnly session cookies) and role checks for NGO admins.
 2. Organizer routes (create/close campaigns and drives, mark attendance).
 3. Admin route to verify NGOs.
-4. Switch `js/store.js` to call this API instead of `localStorage`.
+4. Switch `frontend/assets/js/core/store.js` to call this API instead of `localStorage`.

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover NGOs — HopeConnect AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=3">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="../index.html" class="brand-logo">
+        <div class="logo-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span>HopeConnect<span class="ai-badge">AI</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="ngos.html" class="active">Discover NGOs</a></li>
+        <li><a href="volunteer.html">Volunteer</a></li>
+        <li><a href="campaigns.html">Campaigns</a></li>
+        <li><a href="impact.html">Impact</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <select class="role-switcher-select" id="roleSwitcherSelect" title="Switch User Role View">
+          <option value="volunteer">🙋 Volunteer View</option>
+          <option value="donor">❤️ Donor View</option>
+          <option value="ngo">🏢 NGO Organizer</option>
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="openModal('authModal')">Login</button>
+        <button class="btn btn-sm btn-primary" onclick="openModal('authModal')">Join HopeConnect</button>
+        <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="section-pale" style="padding: 4rem 0 3rem 0;">
+    <div class="container">
+      <div class="section-header" style="margin-bottom: 0;">
+        <div class="section-badge"><i class="fas fa-certificate"></i> Verified & Pending Partners</div>
+        <h2>Discover Grassroots NGOs</h2>
+        <p>Explore vetted, high-impact non-profits and community organizations driving sustainable social transformation across India.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- NGO Directory Section -->
+  <section>
+    <div class="container">
+      <!-- Search & Filters -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="ngoSearchInput" placeholder="Search NGOs by name, cause or location (e.g. Pune, Education)...">
+        </div>
+
+        <div class="filter-chips" id="ngoFilterChips">
+          <button class="filter-chip active" data-category="all">All Causes</button>
+          <button class="filter-chip" data-category="Education">Education</button>
+          <button class="filter-chip" data-category="Healthcare">Healthcare</button>
+          <button class="filter-chip" data-category="Environment">Environment</button>
+          <button class="filter-chip" data-category="Animal Welfare">Animal Welfare</button>
+          <button class="filter-chip" data-category="Women Empowerment">Women Empowerment</button>
+          <button class="filter-chip" data-category="Child Welfare">Child Welfare</button>
+          <button class="filter-chip" data-category="Disaster Relief">Disaster Relief</button>
+        </div>
+      </div>
+
+      <div class="filter-bar" style="margin-top: -1rem; padding-top: 1rem; padding-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer;">
+          <input type="checkbox" id="ngoVerifiedOnly"> Verified NGOs only
+        </label>
+        <span id="ngoResultCount" style="margin-left: auto; font-size: 0.85rem; color: var(--text-muted);" aria-live="polite"></span>
+      </div>
+
+      <!-- NGOs Grid -->
+      <div class="cards-grid" id="ngosGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- NGO Profile Modal -->
+  <div class="modal-backdrop" id="ngoProfileModal">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 id="modalNgoName">NGO Profile</h3>
+        <button class="modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="ngoProfileContent">
+        <!-- Injected via JS -->
+      </div>
+      <div class="modal-footer" id="ngoProfileFooter">
+        <button class="btn btn-secondary" onclick="closeModal('ngoProfileModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <span>&copy; 2026 HopeConnect AI. All rights reserved.</span>
+        <span>Empowering Verified Social Impact.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (order matters: core first, then features, then this page) -->
+  <script src="../assets/js/core/seed-data.js?v=3"></script>
+  <script src="../assets/js/core/store.js?v=3"></script>
+  <script src="../assets/js/core/app.js?v=3"></script>
+  <script src="../assets/js/pages/ngos.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaigns & Donations — HopeConnect AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=3">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="../index.html" class="brand-logo">
+        <div class="logo-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span>HopeConnect<span class="ai-badge">AI</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="ngos.html">Discover NGOs</a></li>
+        <li><a href="volunteer.html">Volunteer</a></li>
+        <li><a href="campaigns.html" class="active">Campaigns</a></li>
+        <li><a href="impact.html">Impact</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <select class="role-switcher-select" id="roleSwitcherSelect" title="Switch User Role View">
+          <option value="volunteer">🙋 Volunteer View</option>
+          <option value="donor">❤️ Donor View</option>
+          <option value="ngo">🏢 NGO Organizer</option>
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="openModal('authModal')">Login</button>
+        <button class="btn btn-sm btn-primary" onclick="openModal('authModal')">Join HopeConnect</button>
+        <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner -->
+  <section class="section-pale" style="padding: 4rem 0 3rem 0;">
+    <div class="container">
+      <div class="section-header" style="margin-bottom: 0;">
+        <div class="section-badge"><i class="fas fa-heart"></i> Transparent Crowdfunding (Demo)</div>
+        <h2>Support Causes That Matter</h2>
+        <p>Directly fund verified community initiatives with full financial transparency and automated impact tracking.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Campaigns Section -->
+  <section>
+    <div class="container">
+      <!-- Search & Filters -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="campaignSearchInput" placeholder="Search campaigns by title, NGO or location (e.g. Digital Classroom, Healthcare)...">
+        </div>
+
+        <div class="filter-chips" id="campaignFilterChips">
+          <button class="filter-chip active" data-category="all">All Causes</button>
+          <button class="filter-chip" data-category="Education">Education</button>
+          <button class="filter-chip" data-category="Environment">Environment</button>
+          <button class="filter-chip" data-category="Healthcare">Healthcare</button>
+          <button class="filter-chip" data-category="Animal Welfare">Animal Welfare</button>
+          <button class="filter-chip" data-category="Women Empowerment">Women Empowerment</button>
+          <button class="filter-chip" data-category="Child Welfare">Child Welfare</button>
+          <button class="filter-chip" data-category="Disaster Relief">Disaster Relief</button>
+        </div>
+      </div>
+
+      <div class="filter-bar" style="margin-top: -1rem; padding-top: 1rem; padding-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem;">
+          <span>Sort by</span>
+          <select class="form-control" id="campaignSort" style="width: auto; padding: 0.45rem 0.8rem;">
+            <option value="featured">Featured first</option>
+            <option value="ending">Ending soon</option>
+            <option value="progress">Closest to goal</option>
+            <option value="newest">Newest</option>
+          </select>
+        </label>
+        <span id="campaignResultCount" style="margin-left: auto; font-size: 0.85rem; color: var(--text-muted);" aria-live="polite"></span>
+      </div>
+
+      <!-- Campaigns Grid -->
+      <div class="cards-grid" id="campaignsGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Donation Impact Calculator Section (Embedded on campaigns page) -->
+  <section class="section-pale">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge"><i class="fas fa-calculator"></i> Impact Estimator</div>
+        <h2>See Your Contribution's Exact Reach</h2>
+        <p>Know exactly how your donation transforms into physical goods and services for communities.</p>
+      </div>
+
+      <div class="calc-card">
+        <div class="calc-grid">
+          <div>
+            <h3 style="margin-bottom: 0.5rem;">Select Donation Amount</h3>
+            <p style="margin-bottom: 1.25rem;">Choose a tier or use the interactive slider:</p>
+
+            <div class="calc-amount-presets">
+              <button class="amount-btn amount-preset-btn" data-amount="100">₹100</button>
+              <button class="amount-btn amount-preset-btn" data-amount="500">₹500</button>
+              <button class="amount-btn amount-preset-btn active" data-amount="1000">₹1,000</button>
+              <button class="amount-btn amount-preset-btn" data-amount="5000">₹5,000</button>
+            </div>
+
+            <div class="calc-slider-wrap">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-weight: 600; font-size: 0.9rem;">Selected Amount:</span>
+                <span id="calcAmountDisplay" style="font-weight: 800; font-size: 1.15rem; color: var(--accent-orange);">₹1,000</span>
+              </div>
+              <input type="range" class="calc-slider" id="calcSlider" min="100" max="10000" step="100" value="1000">
+            </div>
+
+            <button class="btn btn-lg btn-green" id="calcDonateBtn" style="width: 100%; margin-top: 1rem;">
+              <i class="fas fa-hand-holding-heart"></i> Choose a Campaign for This Amount
+            </button>
+          </div>
+
+          <!-- Dynamic Impact Card -->
+          <div class="impact-preview-box">
+            <div class="impact-preview-header">
+              <span style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Tangible Community Deliverables</span>
+              <h3>Your <span id="dynamicHeadingAmount" style="color: var(--accent-orange);">₹1,000</span> Delivers:</h3>
+            </div>
+            <ul class="impact-items-list" id="impactItemsList">
+              <!-- Rendered dynamically by assets/js/features/impact-calculator.js -->
+            </ul>
+            <p class="form-hint" style="margin-top: 0.75rem;"><i class="fas fa-info-circle"></i> Illustrative estimates based on average unit costs — actual outcomes depend on the NGO and campaign.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Support This Cause / Donation Modal -->
+  <div class="modal-backdrop" id="donationModal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalCampTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalCampTitle" style="font-size: 1.25rem;">Support This Cause</h3>
+          <span id="modalCampNgo" style="font-size: 0.82rem; color: var(--accent-orange); font-weight: 600;">NGO Name</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Step 1: donation form -->
+      <form id="donationForm" novalidate>
+        <div class="modal-body">
+          <div class="demo-callout warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Demo donation — no money will be charged or transferred.</strong>
+            Online payments are not connected yet. This only records a pledge in your browser so you can see how tracking works.
+          </div>
+
+          <div class="form-group">
+            <label for="donCampSelect">Campaign *</label>
+            <select class="form-control" id="donCampSelect"></select>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.45rem; display: block;">Select Amount (₹)</label>
+            <div class="calc-amount-presets" style="margin: 0.5rem 0;">
+              <button type="button" class="amount-btn don-tier-btn" data-val="100">₹100</button>
+              <button type="button" class="amount-btn don-tier-btn" data-val="500">₹500</button>
+              <button type="button" class="amount-btn don-tier-btn active" data-val="1000">₹1,000</button>
+              <button type="button" class="amount-btn don-tier-btn" data-val="5000">₹5,000</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="customDonAmount">Or Enter Custom Amount (₹) *</label>
+            <input type="number" class="form-control" id="customDonAmount" value="1000" min="10" max="1000000" step="1" inputmode="numeric">
+            <div class="form-hint">Between ₹10 and ₹10,00,000, whole rupees only.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="donorName">Donor Name *</label>
+            <input type="text" class="form-control" id="donorName" autocomplete="name" placeholder="Your name">
+          </div>
+
+          <div class="form-group">
+            <label for="donorEmail">Email *</label>
+            <input type="email" class="form-control" id="donorEmail" autocomplete="email" placeholder="name@example.com">
+            <div class="form-hint">Used to show this pledge on your Impact page. No email is sent.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('donationModal')">Cancel</button>
+          <button type="submit" class="btn btn-green"><i class="fas fa-check"></i> Record Demo Donation</button>
+        </div>
+      </form>
+
+      <!-- Step 2: demo receipt -->
+      <div id="donationReceipt" hidden>
+        <div class="modal-body">
+          <div style="text-align: center; margin-bottom: 1rem;">
+            <div style="font-size: 2.5rem;">💚</div>
+            <h3 style="margin: 0.25rem 0;">Demo donation recorded</h3>
+            <p style="font-size: 0.9rem;">The campaign progress and your Impact page have been updated.</p>
+          </div>
+          <div class="receipt-box" id="donationReceiptDetails"></div>
+          <div class="demo-callout warning" style="margin: 1rem 0 0 0;">
+            <i class="fas fa-info-circle"></i> This is <strong>not</strong> a payment receipt or tax (80G) receipt. No money moved.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="impact.html" class="btn btn-secondary"><i class="fas fa-chart-line"></i> View My Impact</a>
+          <button type="button" class="btn btn-primary" onclick="closeModal('donationModal')">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <span>&copy; 2026 HopeConnect AI. All rights reserved.</span>
+        <span>Verified Social Crowdfunding Platform.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (order matters: core first, then features, then this page) -->
+  <script src="../assets/js/core/seed-data.js?v=3"></script>
+  <script src="../assets/js/core/store.js?v=3"></script>
+  <script src="../assets/js/core/app.js?v=3"></script>
+  <script src="../assets/js/features/impact-calculator.js?v=3"></script>
+  <script src="../assets/js/pages/campaigns.js?v=3"></script>
+</body>
+</html>

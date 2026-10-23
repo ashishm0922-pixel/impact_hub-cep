@@ -1,6 +1,6 @@
 /**
  * Seeds the database with a few of the demo NGOs, drives and campaigns
- * from the frontend (js/store.js). Run with: npm run prisma:seed
+ * from the frontend (frontend/assets/js/core/seed-data.js). Run with: npm run prisma:seed
  */
 import { PrismaClient } from '@prisma/client';
 

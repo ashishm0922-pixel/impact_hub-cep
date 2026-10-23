@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Opportunities — HopeConnect AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=3">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="../index.html" class="brand-logo">
+        <div class="logo-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span>HopeConnect<span class="ai-badge">AI</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="ngos.html">Discover NGOs</a></li>
+        <li><a href="volunteer.html" class="active">Volunteer</a></li>
+        <li><a href="campaigns.html">Campaigns</a></li>
+        <li><a href="impact.html">Impact</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <select class="role-switcher-select" id="roleSwitcherSelect" title="Switch User Role View">
+          <option value="volunteer">🙋 Volunteer View</option>
+          <option value="donor">❤️ Donor View</option>
+          <option value="ngo">🏢 NGO Organizer</option>
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="openModal('authModal')">Login</button>
+        <button class="btn btn-sm btn-primary" onclick="openModal('authModal')">Join HopeConnect</button>
+        <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner -->
+  <section class="section-pale" style="padding: 4rem 0 3rem 0;">
+    <div class="container">
+      <div class="section-header" style="margin-bottom: 0;">
+        <div class="section-badge"><i class="fas fa-hands-helping"></i> Step Up for Change</div>
+        <h2>Find Where You Can Make a Difference</h2>
+        <p>Connect with high-impact volunteering drives, weekend community initiatives, and skill-based mentoring programs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Opportunities Section -->
+  <section>
+    <div class="container">
+      <!-- Search & Filters -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="oppSearchInput" placeholder="Search opportunities by title, location or skill (e.g. Tree plantation, Teaching, Pune)...">
+        </div>
+
+        <div class="filter-chips" id="oppFilterChips">
+          <button class="filter-chip active" data-category="all">All Causes</button>
+          <button class="filter-chip" data-category="Environment">Environment</button>
+          <button class="filter-chip" data-category="Education">Education</button>
+          <button class="filter-chip" data-category="Healthcare">Healthcare</button>
+          <button class="filter-chip" data-category="Animal Welfare">Animal Welfare</button>
+          <button class="filter-chip" data-category="Women Empowerment">Women Empowerment</button>
+          <button class="filter-chip" data-category="Child Welfare">Child Welfare</button>
+          <button class="filter-chip" data-category="Disaster Relief">Disaster Relief</button>
+        </div>
+      </div>
+
+      <div class="filter-bar" style="margin-top: -1rem; padding-top: 1rem; padding-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem;">
+          <span>Availability</span>
+          <select class="form-control" id="oppAvailabilityFilter" style="width: auto; padding: 0.45rem 0.8rem;">
+            <option value="all">Any time</option>
+            <option value="Weekends">Weekends</option>
+            <option value="Weekdays">Weekdays</option>
+            <option value="Weekday Evenings">Weekday Evenings</option>
+            <option value="Flexible">Flexible</option>
+          </select>
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer;">
+          <input type="checkbox" id="oppOpenOnly" checked> Only show opportunities with open spots
+        </label>
+        <span id="oppResultCount" style="margin-left: auto; font-size: 0.85rem; color: var(--text-muted);" aria-live="polite"></span>
+      </div>
+
+      <!-- Opportunities Grid -->
+      <div class="cards-grid" id="opportunitiesGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Join Opportunity Modal -->
+  <div class="modal-backdrop" id="volunteerModal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalOppTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalOppTitle" style="font-size: 1.2rem;">Join Opportunity</h3>
+          <span id="modalOppNgo" style="font-size: 0.82rem; color: var(--accent-orange); font-weight: 600;">NGO Name</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+      <form id="volunteerRegForm" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="regOppId">
+          <div class="demo-callout">
+            <i class="fas fa-info-circle"></i> Your registration is saved in this browser and appears in the organizer portal.
+            Hours count towards your impact only after the organizer marks you as <strong>Attended</strong>.
+          </div>
+          <div class="form-group">
+            <label for="regName">Your Full Name *</label>
+            <input type="text" class="form-control" id="regName" autocomplete="name" placeholder="e.g. Aarav Sharma">
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email Address *</label>
+            <input type="email" class="form-control" id="regEmail" autocomplete="email" placeholder="name@example.com">
+          </div>
+          <div class="form-group">
+            <label for="regPhone">Contact Phone *</label>
+            <input type="tel" class="form-control" id="regPhone" autocomplete="tel" placeholder="+91 98765 43210">
+          </div>
+          <div class="form-group">
+            <label for="regSkills">Relevant Skills / Interests</label>
+            <input type="text" class="form-control" id="regSkills" maxlength="200" placeholder="e.g. Teaching, First aid, Photography">
+          </div>
+          <div class="form-group">
+            <label for="regAvailability">Your Availability</label>
+            <select class="form-control" id="regAvailability">
+              <option value="Weekends">Weekends</option>
+              <option value="Weekdays">Weekdays</option>
+              <option value="Weekday Evenings">Weekday Evenings</option>
+              <option value="Flexible">Flexible</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('volunteerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Confirm Registration</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <span>&copy; 2026 HopeConnect AI. All rights reserved.</span>
+        <span>Empowering Volunteers Everywhere.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (order matters: core first, then features, then this page) -->
+  <script src="../assets/js/core/seed-data.js?v=3"></script>
+  <script src="../assets/js/core/store.js?v=3"></script>
+  <script src="../assets/js/core/app.js?v=3"></script>
+  <script src="../assets/js/pages/volunteer.js?v=3"></script>
+</body>
+</html>

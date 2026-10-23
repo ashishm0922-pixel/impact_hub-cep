@@ -2,77 +2,112 @@
 
 A platform that connects **volunteers**, **donors** and **NGOs**: discover verified NGOs, join volunteer drives, support campaigns, and track your impact.
 
-> **Current status: working demo (frontend MVP) + backend foundation.**
+> **Status: working demo frontend + backend foundation.**
 > The website runs fully in the browser and saves data in `localStorage`.
-> **No real payments, emails or logins happen.** Everything that is simulated is labelled "demo" in the UI.
+> **No real payments, emails or logins happen.** Simulated features are labelled "demo" in the UI.
 
 ---
 
-## Project structure
+## Folder structure
 
 ```
 hopeconnect-ai/
-├── index.html          Home: hero, smart cause matcher, impact calculator
-├── volunteer.html      Volunteer drives: search, filters, registration
-├── campaigns.html      Campaigns: filters, sorting, demo donations + receipt
-├── ngos.html           NGO directory + profiles (verified / pending)
-├── impact.html         Your impact: hours, donations, badges, charts, certificate
-├── dashboard.html      Organizer portal: create/close/delete, mark attendance
-├── about.html          About the platform
-├── contact.html        Contact form + NGO registration form
-├── css/
-│   ├── style.css       Main styles (design tokens at the top)
-│   └── responsive.css  Tablet / mobile layouts
-├── js/
-│   ├── store.js        Data layer (localStorage) + seed data + calculated stats
-│   ├── app.js          Shared: safe HTML helpers, validation, toasts, modals, demo profile
-│   ├── volunteer.js    Volunteer page logic
-│   ├── campaigns.js    Campaigns page + demo donation flow
-│   ├── ngos.js         NGO directory logic
-│   ├── contact.js      Contact + NGO registration forms
-│   ├── dashboard.js    Impact dashboard + organizer portal
-│   ├── recommendations.js  Rule-based cause matcher (explainable scores)
-│   ├── calculator.js   Donation impact estimator
-│   └── certificate.js  Canvas certificate generator (PNG download)
-└── backend/            Express + TypeScript + Prisma (PostgreSQL) API foundation
+├── README.md                  ← you are here
+├── package.json               ← root shortcuts (npm run frontend, npm run backend:dev, ...)
+├── .editorconfig / .gitignore
+│
+├── frontend/                  ← the website (plain HTML/CSS/JS, no build step)
+│   ├── index.html             ← home page
+│   ├── pages/                 ← every other page
+│   │   ├── volunteer.html     ← volunteer drives: search, filters, sign-up
+│   │   ├── campaigns.html     ← campaigns + demo donations
+│   │   ├── ngos.html          ← NGO directory + profiles
+│   │   ├── impact.html        ← your hours, donations, badges, certificate
+│   │   ├── dashboard.html     ← organizer portal
+│   │   ├── about.html
+│   │   └── contact.html       ← contact form + NGO registration
+│   └── assets/
+│       ├── css/
+│       │   ├── style.css      ← design tokens + all components
+│       │   └── responsive.css ← tablet / phone layouts
+│       └── js/
+│           ├── core/          ← loaded on EVERY page, in this order:
+│           │   ├── seed-data.js  ← demo data + date helpers
+│           │   ├── store.js      ← data layer (localStorage) + calculated stats
+│           │   └── app.js        ← shared helpers: escaping, validation, links, toasts, modals
+│           ├── features/      ← reusable widgets
+│           │   ├── matcher.js            ← rule-based cause matcher (home)
+│           │   ├── impact-calculator.js  ← "what ₹X delivers" (home, campaigns)
+│           │   └── certificate.js        ← canvas certificate (impact)
+│           └── pages/         ← one script per page
+│               ├── home.js, volunteer.js, campaigns.js, ngos.js
+│               ├── contact.js, impact.js, organizer.js
+│
+├── backend/                   ← REST API: Express + TypeScript + Prisma (PostgreSQL)
+│   ├── prisma/                ← schema.prisma (tables) + seed.ts
+│   ├── src/
+│   │   ├── server.ts          ← starts the server
+│   │   ├── app.ts             ← builds the Express app
+│   │   ├── config/            ← environment variables (one place)
+│   │   ├── lib/               ← Prisma client
+│   │   ├── middlewares/       ← 404 + error handler
+│   │   ├── utils/             ← HttpError
+│   │   ├── shared/            ← validation pieces used by many modules
+│   │   ├── routes/            ← mounts every module under /api
+│   │   └── modules/           ← one folder per feature
+│   │       ├── health/  ngos/  opportunities/  campaigns/  contact/
+│   │       │   (each has *.routes.ts and, if it accepts input, *.schemas.ts)
+│   └── tests/                 ← API tests (run without a database)
+│
+├── docs/
+│   ├── ARCHITECTURE.md        ← how the pieces fit together + how to add things
+│   └── ROADMAP.md             ← what to build next
+│
+├── scripts/
+│   └── serve-frontend.mjs     ← zero-dependency static server for frontend/
+│
+└── archive/
+    └── original-prototype.zip ← untouched copy of the first prototype
 ```
 
-## Run the website (frontend)
+## Quick start
 
-No build step and no dependencies. Serve the folder with any static server:
+**Website** (needs Node.js 20+, nothing to install):
 
 ```bash
-python -m http.server 5500
+npm run frontend
 ```
 
-Then open <http://localhost:5500>. (Opening `index.html` directly also works, but a server is closer to production.)
+Open <http://localhost:5500>.
 
-**Reset the demo:** use the "Reset demo data" button in any page footer.
+**Backend** (optional; the website doesn't call it yet):
 
-### Try the main journeys
-1. **Volunteer:** Volunteer → search "pune tree" → *Join Opportunity* → the form rejects invalid name/email/phone → registration confirmed.
-2. **Organizer:** Organizer Portal → *New Drive* (date = today) → register for it on the Volunteer page → back in the portal mark it **Attended** → hours appear on **Impact**.
-3. **Donor:** Campaigns → *Support This Cause* → demo donation → receipt says "Not charged (demo)" → Impact page updates.
-4. **Matcher:** Home → pick causes, city, skills → *Find My Matches* → each result explains **why** it matched.
-5. **Certificate:** Impact → enter name → *Download* (only once you have attended hours).
+```bash
+npm run backend:install
+npm run backend:test
+npm run backend:dev
+```
 
-## How the data works (important for learning)
-- `js/store.js` stores **raw records** (registrations, donations, campaigns, ...).
-- Totals (hours, ₹ contributed, badges, charts) are **calculated** from those records every time, so the numbers never contradict each other.
-- Volunteer hours count only after an organizer marks attendance (on or after the event date).
-- Badges unlock automatically from rules (e.g. 20 attended hours → Community Hero).
-- All user text is escaped with `HC.escape()` before going into HTML, and URLs pass through `HC.safeUrl()`. This blocks XSS.
+Health check: <http://localhost:4000/api/health>. For database setup see [backend/README.md](backend/README.md).
 
-## Run the backend (optional, foundation only)
-See [`backend/README.md`](backend/README.md). The frontend does **not** call the backend yet.
+## Try the main journeys
+1. **Volunteer:** Volunteer → search "pune tree" → *Join Opportunity* → invalid name/email/phone is rejected → registered.
+2. **Organizer:** Organizer Portal → *New Drive* (date = today) → join it on the Volunteer page → mark **Attended** in the portal → hours appear on **Impact**.
+3. **Donor:** Campaigns → *Support This Cause* → demo donation → receipt says "Not charged (demo)".
+4. **Matcher:** Home → pick causes, city, skills → each result explains **why** it matched.
+5. **Certificate:** Impact → *Download* (only once you have attended hours).
+
+Use **Reset demo data** in any page footer to start over.
 
 ## What is simulated vs real
 | Feature | Status |
 |---|---|
 | Search, filters, registration, organizer tools | ✅ Working (browser storage) |
-| Donations | ⚠️ Demo only: no payment provider connected, no money moves |
+| Recommendations | ✅ Transparent rule-based scoring (not machine learning) |
+| Donations | ⚠️ Demo only: no payment provider, no money moves |
 | Login / accounts | ⚠️ Demo profile (name + email, no password) |
 | Contact form | ⚠️ Saved in browser; no email is sent |
-| NGO verification | ⚠️ New NGOs stay "Pending"; no admin review flow yet |
-| Recommendations | ✅ Transparent rule-based scoring (not machine learning) |
-| Certificates | ⚠️ Generated in-browser; not independently verifiable yet |
+| NGO verification | ⚠️ New NGOs stay "Pending"; no admin review yet |
+| Certificates | ⚠️ Generated in-browser; not independently verifiable |
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Next steps: [docs/ROADMAP.md](docs/ROADMAP.md)
