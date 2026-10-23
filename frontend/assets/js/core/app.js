@@ -251,14 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initToastContainer();
   initModals();
-  initDemoNotice();
   highlightActiveNavLink();
 });
 
 // After the router swaps in a new page: re-connect the parts that live in the new HTML
 document.addEventListener('hc:page-ready', () => {
   initNavbar();
-  initDemoNotice();
   highlightActiveNavLink();
 });
 
@@ -337,31 +335,6 @@ function highlightActiveNavLink() {
     // Compare file names only, so "../index.html" and "pages/volunteer.html" both work
     const linkFile = link.getAttribute('href').split(/[?#]/)[0].split('/').pop();
     link.classList.toggle('active', linkFile === currentPath);
-  });
-}
-
-/* ==========================================================================
-   Demo notice (honest labelling) + reset button in the footer
-   ========================================================================== */
-function initDemoNotice() {
-  const footer = document.querySelector('.site-footer .container');
-  if (!footer || document.getElementById('demoNotice')) return;
-
-  const notice = document.createElement('div');
-  notice.id = 'demoNotice';
-  notice.className = 'demo-notice';
-  notice.innerHTML = `
-    <span><i class="fas fa-flask"></i> <strong>Demo data:</strong> drives, campaigns and donations are stored only in this browser.
-    No real payments or emails happen. (Accounts and login are real.)</span>
-    <button type="button" class="btn btn-sm btn-outline" id="resetDemoBtn"><i class="fas fa-undo"></i> Reset demo data</button>
-  `;
-  footer.appendChild(notice);
-
-  document.getElementById('resetDemoBtn').addEventListener('click', () => {
-    if (confirm('Reset all demo data in this browser? Your registrations, demo donations and created campaigns will be removed.')) {
-      window.HCStore.resetDemoData();
-      window.location.reload();
-    }
   });
 }
 
