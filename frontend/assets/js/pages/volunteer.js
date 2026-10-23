@@ -147,10 +147,11 @@ function openJoinModal(oppId) {
   const form = document.getElementById('volunteerRegForm');
   window.HC.clearFieldErrors(form);
 
-  // Pre-fill from the demo profile
+  // Pre-fill from the logged-in account (or the demo profile when logged out)
   const profile = window.HCStore.getProfile();
   document.getElementById('regName').value = profile.name || '';
   document.getElementById('regEmail').value = profile.email || '';
+  document.getElementById('regPhone').value = profile.phone || '';
 
   document.getElementById('regOppId').value = opp.id;
   document.getElementById('modalOppTitle').textContent = opp.title;
@@ -163,6 +164,15 @@ function setupRegistrationForm() {
   const form = document.getElementById('volunteerRegForm');
   if (!form) return;
   const { validators } = window.HC;
+
+  // Keep only digits; accept pasted "+91 98765 43210" / "09876543210"
+  const phoneField = document.getElementById('regPhone');
+  phoneField.addEventListener('input', () => {
+    let digits = phoneField.value.replace(/\D/g, '');
+    if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+    if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+    if (phoneField.value !== digits) phoneField.value = digits;
+  });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();

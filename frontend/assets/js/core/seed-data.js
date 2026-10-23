@@ -389,6 +389,7 @@ function buildInitialCampaigns() {
 const DEMO_PROFILE = {
   name: 'Aarav Sharma',
   email: 'aarav.sharma@example.com',
+  phone: '9876543210',
   role: 'volunteer',
   isDemo: true
 };
@@ -402,21 +403,21 @@ function buildInitialRegistrations() {
       id: 'reg-seed-1', opportunityId: 'opp-past-1',
       opportunityTitle: 'Riverbank Clean-up Drive', ngoId: 'ngo-1', ngoName: 'Green Earth Foundation',
       category: 'Environment', eventDate: isoDaysFromToday(-75), hours: 4,
-      name: me.name, email: me.email, phone: '+91 98765 43210', skills: 'Gardening, Photography',
+      name: me.name, email: me.email, phone: '9876543210', skills: 'Gardening, Photography',
       availability: 'Weekends', dateApplied: isoDaysFromToday(-82), status: 'Attended'
     },
     {
       id: 'reg-seed-2', opportunityId: 'opp-past-2',
       opportunityTitle: 'Weekend Reading Circle', ngoId: 'ngo-2', ngoName: 'Smile Education Trust',
       category: 'Education', eventDate: isoDaysFromToday(-40), hours: 3,
-      name: me.name, email: me.email, phone: '+91 98765 43210', skills: 'Teaching',
+      name: me.name, email: me.email, phone: '9876543210', skills: 'Teaching',
       availability: 'Weekends', dateApplied: isoDaysFromToday(-45), status: 'Attended'
     },
     {
       id: 'reg-seed-3', opportunityId: 'opp-1',
       opportunityTitle: 'Mega Urban Tree Plantation Drive', ngoId: 'ngo-1', ngoName: 'Green Earth Foundation',
       category: 'Environment', eventDate: isoDaysFromToday(12), hours: 4,
-      name: me.name, email: me.email, phone: '+91 98765 43210', skills: 'Gardening, Team Coordination',
+      name: me.name, email: me.email, phone: '9876543210', skills: 'Gardening, Team Coordination',
       availability: 'Weekends', dateApplied: isoDaysFromToday(-3), status: 'Registered'
     },
     // Other volunteers (visible to organizers)
@@ -424,14 +425,14 @@ function buildInitialRegistrations() {
       id: 'reg-seed-4', opportunityId: 'opp-1',
       opportunityTitle: 'Mega Urban Tree Plantation Drive', ngoId: 'ngo-1', ngoName: 'Green Earth Foundation',
       category: 'Environment', eventDate: isoDaysFromToday(12), hours: 4,
-      name: 'Rohan Deshmukh', email: 'rohan.d@example.com', phone: '+91 90000 11111', skills: 'Physical labour, Driving',
+      name: 'Rohan Deshmukh', email: 'rohan.d@example.com', phone: '9000011111', skills: 'Physical labour, Driving',
       availability: 'Weekends', dateApplied: isoDaysFromToday(-6), status: 'Registered'
     },
     {
       id: 'reg-seed-5', opportunityId: 'opp-2',
       opportunityTitle: 'Weekend Math & Coding Mentorship', ngoId: 'ngo-2', ngoName: 'Smile Education Trust',
       category: 'Education', eventDate: isoDaysFromToday(4), hours: 3,
-      name: 'Priya Nair', email: 'priya.nair@example.com', phone: '+91 90000 22222', skills: 'Teaching, Python',
+      name: 'Priya Nair', email: 'priya.nair@example.com', phone: '9000022222', skills: 'Teaching, Python',
       availability: 'Weekends', dateApplied: isoDaysFromToday(-10), status: 'Registered'
     }
   ];

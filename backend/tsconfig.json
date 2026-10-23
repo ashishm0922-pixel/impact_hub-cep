@@ -1,5 +1,5 @@
 {
-  // Used by your editor and `npm run typecheck` (covers app code, tests and the seed script)
+  // Used by your editor and `npm run typecheck` (covers app code and tests)
   "compilerOptions": {
     "target": "ES2022",
     "module": "CommonJS",
@@ -10,5 +10,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "prisma"]
+  "include": ["src", "tests"]
 }

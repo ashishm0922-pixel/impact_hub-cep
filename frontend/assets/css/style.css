@@ -2190,3 +2190,258 @@ textarea.form-control {
   margin-top: 0.75rem;
   font-size: 0.8rem;
 }
+
+/* ==========================================================================
+   Auth: header area, login/sign-up modal, password field, alerts
+   ========================================================================== */
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.auth-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.auth-chip .fa-user-circle {
+  color: var(--accent-gold-hover);
+  font-size: 1.15rem;
+}
+
+.auth-chip-role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--accent-green-light);
+  color: var(--accent-green);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+}
+
+.auth-card {
+  max-width: 460px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.auth-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.8rem 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  color: var(--text-main);
+  border-bottom-color: var(--accent-gold);
+}
+
+.auth-footer {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-alert {
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+  line-height: 1.45;
+}
+
+.form-alert.error {
+  background: #FFF1F0;
+  border: 1px solid #F5C2BE;
+  color: #A93226;
+}
+
+.form-alert.info {
+  background: var(--accent-blue-light);
+  border: 1px solid #CFE0F8;
+  color: #23578F;
+}
+
+.form-alert.success {
+  background: var(--accent-green-light);
+  border: 1px solid #CDE6D4;
+  color: var(--accent-green-hover);
+}
+
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap .form-control {
+  padding-right: 2.8rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+}
+
+.password-rules {
+  list-style: none;
+  margin: -0.6rem 0 1rem 0;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+}
+
+.password-rules li::before {
+  content: '○ ';
+}
+
+.password-rules li.met {
+  color: var(--accent-green);
+}
+
+.password-rules li.met::before {
+  content: '✓ ';
+  font-weight: 700;
+}
+
+.input-prefix-wrap {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.8rem;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-light);
+  border-right: none;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.input-prefix-wrap .form-control {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* the error message should sit under the whole input group */
+.input-prefix-wrap + .field-error,
+.password-wrap + .field-error {
+  margin-top: 0.35rem;
+}
+
+.nav-mobile-user {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   Admin panel
+   ========================================================================== */
+.admin-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.admin-login-card {
+  max-width: 420px;
+  margin: 3rem auto;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 2rem;
+}
+
+.admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-status-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-status-tab {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-status-tab strong {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--text-main);
+}
+
+.admin-status-tab span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin-status-tab.active {
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-glow);
+}
+
+.admin-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-toolbar .form-control {
+  max-width: 340px;
+}
+
+.admin-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

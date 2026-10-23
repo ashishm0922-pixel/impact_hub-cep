@@ -11,7 +11,7 @@
  * dashboard numbers can never drift out of sync with the actual data.
  */
 
-const DATA_VERSION = '2';
+const DATA_VERSION = '3'; // bump when the seed data format changes (resets old browser data)
 
 const STORAGE_KEYS = {
   VERSION: 'hopeconnect_data_version',
@@ -114,11 +114,18 @@ class StoreManager {
     return this.read(STORAGE_KEYS.PROFILE, DEMO_PROFILE);
   }
 
-  saveProfile({ name, email, role }) {
-    const profile = { name, email: email.toLowerCase(), role, isDemo: false };
+  // Called by auth.js after login: the site then shows THIS account's activity
+  setAccountProfile(user) {
+    const profile = { name: user.name, email: user.email.toLowerCase(), phone: user.phone, role: user.role, accountId: user.id, isDemo: false };
     this.write(STORAGE_KEYS.PROFILE, profile);
-    this.setCurrentRole(role);
+    this.setCurrentRole(user.role);
     return profile;
+  }
+
+  // Called after logout: go back to the demo profile
+  clearAccountProfile() {
+    this.write(STORAGE_KEYS.PROFILE, DEMO_PROFILE);
+    this.setCurrentRole('volunteer');
   }
 
   isMine(email) {

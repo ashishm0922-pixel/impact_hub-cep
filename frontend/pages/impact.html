@@ -17,8 +17,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=4">
 </head>
 <body>
 
@@ -41,13 +41,7 @@
       </ul>
 
       <div class="nav-actions">
-        <select class="role-switcher-select" id="roleSwitcherSelect" title="Switch User Role View">
-          <option value="volunteer" selected>🙋 Volunteer View</option>
-          <option value="donor">❤️ Donor View</option>
-          <option value="ngo">🏢 NGO Organizer</option>
-        </select>
-        <button class="btn btn-sm btn-outline" onclick="openModal('authModal')">Login</button>
-        <button class="btn btn-sm btn-primary" onclick="openModal('authModal')">My Account</button>
+        <div class="auth-area" id="authArea"></div>
         <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
       </div>
     </div>
@@ -59,7 +53,7 @@
       <div class="section-header" style="margin-bottom: 0;">
         <div class="section-badge"><i class="fas fa-chart-line"></i> Personal Social Footprint</div>
         <h2>Your Impact Dashboard</h2>
-        <p>Showing activity for <strong id="impactProfileName">you</strong>. Hours count once an organizer confirms attendance. <a href="#" onclick="openModal('authModal'); return false;">Change profile</a></p>
+        <p>Showing activity for <strong id="impactProfileName">you</strong>. Hours count once an organizer confirms attendance. <a href="#" data-auth="login">Log in to see your own activity</a></p>
       </div>
     </div>
   </section>
@@ -229,10 +223,11 @@
   </footer>
 
   <!-- Scripts (order matters: core first, then features, then this page) -->
-  <script src="../assets/js/core/seed-data.js?v=3"></script>
-  <script src="../assets/js/core/store.js?v=3"></script>
-  <script src="../assets/js/core/app.js?v=3"></script>
-  <script src="../assets/js/pages/impact.js?v=3"></script>
-  <script src="../assets/js/features/certificate.js?v=3"></script>
+  <script src="../assets/js/core/seed-data.js?v=4"></script>
+  <script src="../assets/js/core/store.js?v=4"></script>
+  <script src="../assets/js/core/app.js?v=4"></script>
+  <script src="../assets/js/core/auth.js?v=4"></script>
+  <script src="../assets/js/pages/impact.js?v=4"></script>
+  <script src="../assets/js/features/certificate.js?v=4"></script>
 </body>
 </html>

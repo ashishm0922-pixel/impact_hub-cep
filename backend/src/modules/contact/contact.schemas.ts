@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { emailSchema } from '../../shared/schemas';
+import { emailSchema, nameSchema } from '../../shared/schemas';
 
 export const contactMessageSchema = z.object({
-  name: z.string().trim().min(2).max(60),
+  name: nameSchema,
   email: emailSchema,
-  subject: z.string().trim().max(120).optional(),
-  message: z.string().trim().min(10).max(2000)
+  subject: z.string().trim().max(120, 'Subject is too long.').optional(),
+  message: z.string({ required_error: 'Message is required.' }).trim()
+    .min(10, 'Message must be at least 10 characters.').max(2000, 'Message is too long.')
 });

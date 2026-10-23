@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { requireDb } from '../../lib/prisma';
-import { listQuerySchema } from '../../shared/schemas';
+import { NgoModel } from '../../models/ngo.model';
+import { escapeRegex, listQuerySchema } from '../../shared/schemas';
 import { ngoApplicationSchema } from './ngos.schemas';
 
 export const ngoRoutes = Router();
@@ -10,28 +10,20 @@ const slugify = (text: string) =>
 
 // GET /api/ngos?category=&search=
 ngoRoutes.get('/', async (req, res) => {
-  const db = requireDb();
   const { category, search } = listQuerySchema.parse(req.query);
-  const ngos = await db.ngo.findMany({
-    where: {
-      category,
-      status: { not: 'REJECTED' },
-      ...(search && { OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } }
-      ] })
-    },
-    orderBy: [{ status: 'desc' }, { name: 'asc' }]
-  });
+  const filter: Record<string, unknown> = { status: { $ne: 'rejected' } };
+  if (category) filter.category = category;
+  if (search) {
+    const pattern = new RegExp(escapeRegex(search), 'i');
+    filter.$or = [{ name: pattern }, { location: pattern }];
+  }
+  const ngos = await NgoModel.find(filter).sort({ status: -1, name: 1 });
   res.json(ngos);
 });
 
-// POST /api/ngos — new NGOs always start as PENDING_VERIFICATION (an admin verifies them later)
+// POST /api/ngos — new NGOs always start as "pending" (an admin verifies them later)
 ngoRoutes.post('/', async (req, res) => {
-  const db = requireDb();
   const data = ngoApplicationSchema.parse(req.body);
-  const ngo = await db.ngo.create({
-    data: { ...data, website: data.website || null, slug: slugify(data.name), status: 'PENDING_VERIFICATION' }
-  });
+  const ngo = await NgoModel.create({ ...data, website: data.website || undefined, slug: slugify(data.name), status: 'pending' });
   res.status(201).json(ngo);
 });

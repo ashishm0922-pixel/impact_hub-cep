@@ -3,11 +3,12 @@
   "private": true,
   "description": "HopeConnect AI: connects volunteers, donors and NGOs. Root scripts for the frontend and backend.",
   "scripts": {
+    "start": "npm --prefix backend run dev",
+    "start:local": "npm --prefix backend run dev:local",
     "frontend": "node scripts/serve-frontend.mjs",
     "backend:install": "npm --prefix backend install",
-    "backend:dev": "npm --prefix backend run dev",
-    "backend:test": "npm --prefix backend test",
-    "backend:build": "npm --prefix backend run build",
+    "admin:create": "npm --prefix backend run admin:create",
+    "test": "npm --prefix backend test",
     "check": "npm --prefix backend run typecheck && npm --prefix backend test"
   },
   "engines": {

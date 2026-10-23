@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireDb } from '../../lib/prisma';
+import { CampaignModel, DonationModel } from '../../models/campaign.model';
 import { listQuerySchema } from '../../shared/schemas';
 import { HttpError } from '../../utils/http-error';
 
@@ -7,33 +7,29 @@ export const campaignRoutes = Router();
 
 // GET /api/campaigns?category=
 campaignRoutes.get('/', async (req, res) => {
-  const db = requireDb();
   const { category } = listQuerySchema.parse(req.query);
-  const campaigns = await db.campaign.findMany({
-    where: { category, status: 'ACTIVE' },
-    include: { ngo: { select: { id: true, name: true, status: true } } },
-    orderBy: [{ featured: 'desc' }, { endDate: 'asc' }]
-  });
+  const filter: Record<string, unknown> = { status: 'active' };
+  if (category) filter.category = category;
+
+  const campaigns = await CampaignModel.find(filter).populate('ngo', 'name status').sort({ featured: -1, endDate: 1 });
 
   // "Raised" only counts payments the provider has CONFIRMED
-  const totals = await db.donation.groupBy({
-    by: ['campaignId'],
-    where: { status: 'SUCCEEDED' },
-    _sum: { amountPaise: true },
-    _count: true
-  });
-  const byCampaign = new Map(totals.map(t => [t.campaignId, t]));
+  const totals = await DonationModel.aggregate<{ _id: unknown; raisedPaise: number; supporters: number }>([
+    { $match: { status: 'succeeded' } },
+    { $group: { _id: '$campaign', raisedPaise: { $sum: '$amountPaise' }, supporters: { $sum: 1 } } }
+  ]);
+  const byCampaign = new Map(totals.map(t => [String(t._id), t]));
 
   res.json(campaigns.map(c => ({
-    ...c,
-    raisedPaise: byCampaign.get(c.id)?._sum.amountPaise ?? 0,
-    supporters: byCampaign.get(c.id)?._count ?? 0
+    ...c.toJSON(),
+    raisedPaise: byCampaign.get(String(c._id))?.raisedPaise ?? 0,
+    supporters: byCampaign.get(String(c._id))?.supporters ?? 0
   })));
 });
 
 // POST /api/campaigns/:id/donations
 // Intentionally NOT implemented: donations must go through a payment provider (e.g. Razorpay)
-// and be marked SUCCEEDED only from a verified webhook. See backend/README.md → "Payments".
+// and be marked "succeeded" only from a verified webhook. See backend/README.md → "Payments".
 campaignRoutes.post('/:id/donations', () => {
-  throw new HttpError(501, 'Online payments are not connected yet. See README: "Payments".');
+  throw new HttpError(501, 'Online payments are not connected yet.', { code: 'NOT_IMPLEMENTED' });
 });

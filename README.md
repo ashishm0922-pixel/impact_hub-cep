@@ -13,7 +13,7 @@ A platform that connects **volunteers**, **donors** and **NGOs**: discover verif
 ```
 hopeconnect-ai/
 ├── README.md                  ← you are here
-├── package.json               ← root shortcuts (npm run frontend, npm run backend:dev, ...)
+├── package.json               ← root shortcuts (npm start, npm run start:local, npm test, ...)
 ├── .editorconfig / .gitignore
 │
 ├── frontend/                  ← the website (plain HTML/CSS/JS, no build step)
@@ -24,6 +24,7 @@ hopeconnect-ai/
 │   │   ├── ngos.html          ← NGO directory + profiles
 │   │   ├── impact.html        ← your hours, donations, badges, certificate
 │   │   ├── dashboard.html     ← organizer portal
+│   │   ├── admin.html         ← admin panel: approve / reject / suspend accounts
 │   │   ├── about.html
 │   │   └── contact.html       ← contact form + NGO registration
 │   └── assets/
@@ -34,30 +35,28 @@ hopeconnect-ai/
 │           ├── core/          ← loaded on EVERY page, in this order:
 │           │   ├── seed-data.js  ← demo data + date helpers
 │           │   ├── store.js      ← data layer (localStorage) + calculated stats
-│           │   └── app.js        ← shared helpers: escaping, validation, links, toasts, modals
+│           │   ├── app.js        ← shared helpers: escaping, validation, API calls, toasts, modals
+│           │   └── auth.js       ← login / sign-up modal + logged-in header
 │           ├── features/      ← reusable widgets
 │           │   ├── matcher.js            ← rule-based cause matcher (home)
 │           │   ├── impact-calculator.js  ← "what ₹X delivers" (home, campaigns)
 │           │   └── certificate.js        ← canvas certificate (impact)
 │           └── pages/         ← one script per page
 │               ├── home.js, volunteer.js, campaigns.js, ngos.js
-│               ├── contact.js, impact.js, organizer.js
+│               ├── contact.js, impact.js, organizer.js, admin.js
 │
-├── backend/                   ← REST API: Express + TypeScript + Prisma (PostgreSQL)
-│   ├── prisma/                ← schema.prisma (tables) + seed.ts
+├── backend/                   ← API + serves the website: Express + TypeScript + MongoDB Atlas
 │   ├── src/
-│   │   ├── server.ts          ← starts the server
-│   │   ├── app.ts             ← builds the Express app
+│   │   ├── server.ts / app.ts ← start-up and Express app
 │   │   ├── config/            ← environment variables (one place)
-│   │   ├── lib/               ← Prisma client
-│   │   ├── middlewares/       ← 404 + error handler
-│   │   ├── utils/             ← HttpError
-│   │   ├── shared/            ← validation pieces used by many modules
-│   │   ├── routes/            ← mounts every module under /api
-│   │   └── modules/           ← one folder per feature
-│   │       ├── health/  ngos/  opportunities/  campaigns/  contact/
-│   │       │   (each has *.routes.ts and, if it accepts input, *.schemas.ts)
-│   └── tests/                 ← API tests (run without a database)
+│   │   ├── db/                ← MongoDB connection
+│   │   ├── models/            ← Mongoose models (user, admin, session, ngo, ...)
+│   │   ├── middlewares/       ← auth guards, security (CSRF, rate limits), errors
+│   │   ├── modules/           ← one folder per feature: auth/ admin/ ngos/ opportunities/ ...
+│   │   ├── shared/ utils/     ← validation rules, password hashing, tokens
+│   │   └── scripts/           ← create-admin, seed, dev-local
+│   ├── tests/                 ← 43 auth/API tests (in-memory MongoDB)
+│   └── .env.example           ← copy to .env (MongoDB Atlas URI, admin login)
 │
 ├── docs/
 │   ├── ARCHITECTURE.md        ← how the pieces fit together + how to add things
@@ -72,23 +71,37 @@ hopeconnect-ai/
 
 ## Quick start
 
-**Website** (needs Node.js 20+, nothing to install):
-
-```bash
-npm run frontend
-```
-
-Open <http://localhost:5500>.
-
-**Backend** (optional; the website doesn't call it yet):
+Needs **Node.js 20+**.
 
 ```bash
 npm run backend:install
-npm run backend:test
-npm run backend:dev
 ```
 
-Health check: <http://localhost:4000/api/health>. For database setup see [backend/README.md](backend/README.md).
+Then **either** connect MongoDB Atlas (see [backend/README.md](backend/README.md#1-connect-mongodb-atlas-one-time-5-minutes)) and run:
+
+```bash
+npm start
+```
+
+**or**, to try it without Atlas (a local MongoDB is started for you):
+
+```bash
+npm run start:local
+```
+
+Open <http://localhost:4000>. The admin panel is at <http://localhost:4000/pages/admin.html>: username `admin`, and the password is in `backend/.env`.
+
+Run the tests:
+
+```bash
+npm test
+```
+
+## Accounts & admin approval
+1. **Sign up** (header → *Sign up*): full name, email, 10-digit mobile number (6–9 first), role and password.
+2. The account is **pending**. Logging in shows "waiting for admin approval".
+3. The **admin** approves it in the admin panel (or rejects / suspends it with a reason).
+4. The user **logs in** with their email **or** mobile number plus password.
 
 ## Try the main journeys
 1. **Volunteer:** Volunteer → search "pune tree" → *Join Opportunity* → invalid name/email/phone is rejected → registered.
@@ -102,10 +115,10 @@ Use **Reset demo data** in any page footer to start over.
 ## What is simulated vs real
 | Feature | Status |
 |---|---|
-| Search, filters, registration, organizer tools | ✅ Working (browser storage) |
+| Search, filters, registration, organizer tools | ✅ Working, but data is still in browser storage (demo) |
 | Recommendations | ✅ Transparent rule-based scoring (not machine learning) |
 | Donations | ⚠️ Demo only: no payment provider, no money moves |
-| Login / accounts | ⚠️ Demo profile (name + email, no password) |
+| Sign-up / login / admin approval | ✅ Real (MongoDB, hashed passwords, secure sessions) |
 | Contact form | ⚠️ Saved in browser; no email is sent |
 | NGO verification | ⚠️ New NGOs stay "Pending"; no admin review yet |
 | Certificates | ⚠️ Generated in-browser; not independently verifiable |

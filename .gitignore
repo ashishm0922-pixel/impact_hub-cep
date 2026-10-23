@@ -12,3 +12,6 @@ backend/dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local MongoDB data from 'npm run dev:local'
+backend/.local-mongo/

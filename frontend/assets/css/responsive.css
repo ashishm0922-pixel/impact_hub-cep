@@ -299,3 +299,21 @@
     font-size: 2.15rem;
   }
 }
+
+/* v4: auth + admin on small screens */
+@media (max-width: 768px) {
+  .admin-status-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* on phones the account actions live inside the hamburger menu */
+  .nav-actions .auth-chip {
+    display: none;
+  }
+
+  .auth-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    text-align: center;
+  }
+}

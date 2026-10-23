@@ -1,11 +1,15 @@
 # Roadmap
 
 ## Phase 1: Make it real (next)
-- [ ] PostgreSQL running (local or hosted, e.g. Neon/Supabase), then `prisma migrate` + seed
-- [ ] Accounts: sign-up/login with hashed passwords, httpOnly session cookies, roles (volunteer, donor, NGO admin, platform admin)
+- [x] MongoDB Atlas connection (Mongoose)
+- [x] Accounts: sign-up/login with hashed passwords, httpOnly session cookies, roles (volunteer, donor, NGO)
+- [x] Admin approval of new accounts (approve / reject / suspend)
+- [ ] Forgot password / change password (needs an email service)
+- [ ] Email verification on sign-up
 - [ ] Switch `frontend/assets/js/core/store.js` from localStorage to the API, one feature at a time (start with volunteer registration)
 - [ ] Organizer API: create/close campaigns and drives, mark attendance
-- [ ] Admin panel: verify or reject NGOs (check registration + 80G/12A documents)
+- [ ] Admin panel: also verify or reject NGOs (check registration + 80G/12A documents)
+- [ ] Organizer portal only for approved NGO accounts
 
 ## Phase 2: Money & trust
 - [ ] Razorpay donations: server creates the order, webhook confirms → `SUCCEEDED`

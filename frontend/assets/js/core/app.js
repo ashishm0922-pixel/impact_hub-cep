@@ -1,7 +1,7 @@
 /**
  * HopeConnect AI - Global Application Logic
- * Shared helpers (safe HTML, validation, formatting), navbar, toasts,
- * modals, demo profile and role switcher. Loaded on every page after store.js.
+ * Shared helpers (safe HTML, validation, API calls, formatting), navbar, toasts
+ * and modals. Loaded on every page after store.js. Login/sign-up lives in auth.js.
  */
 
 /* ==========================================================================
@@ -40,14 +40,43 @@ const HC = {
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   },
 
-  // Simple validators. Each returns an error message, or '' when valid.
+  /**
+   * Validators. Each returns an error message, or '' when valid.
+   * These match the server's rules exactly (backend/src/shared/schemas.ts).
+   */
   validators: {
     required: (v, label) => (String(v).trim() ? '' : `${label} is required.`),
-    name: v => (/^[\p{L} .'-]{2,60}$/u.test(String(v).trim()) ? '' : 'Enter a valid name (2–60 letters).'),
-    email: v => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v).trim()) ? '' : 'Enter a valid email address.'),
+    name: v => {
+      v = String(v).trim();
+      if (!v) return 'Full name is required.';
+      if (v.length < 2) return 'Name must be at least 2 characters.';
+      if (v.length > 60) return 'Name must be at most 60 characters.';
+      if (!/^[\p{L}][\p{L} .'-]*$/u.test(v)) return 'Name can only contain letters, spaces, dots, hyphens and apostrophes.';
+      return '';
+    },
+    email: v => {
+      v = String(v).trim();
+      if (!v) return 'Email is required.';
+      if (v.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'Enter a valid email address.';
+      return '';
+    },
+    // Indian mobile: exactly 10 digits, starting with 6-9 (no +91, spaces or dashes)
     phone: v => {
-      const digits = String(v).replace(/\D/g, '');
-      return digits.length >= 10 && digits.length <= 13 ? '' : 'Enter a valid phone number (10–13 digits).';
+      v = String(v).trim();
+      if (!v) return 'Mobile number is required.';
+      if (!/^\d+$/.test(v)) return 'Mobile number must contain digits only.';
+      if (v.length !== 10) return 'Mobile number must be exactly 10 digits.';
+      if (!/^[6-9]/.test(v)) return 'Mobile number must start with 6, 7, 8 or 9.';
+      return '';
+    },
+    password: v => {
+      if (!v) return 'Password is required.';
+      if (v.length < 8) return 'Password must be at least 8 characters.';
+      if (v.length > 72) return 'Password must be at most 72 characters.';
+      if (!/[A-Za-z]/.test(v)) return 'Password must include at least one letter.';
+      if (!/\d/.test(v)) return 'Password must include at least one number.';
+      if (v.trim() !== v) return 'Password cannot start or end with a space.';
+      return '';
     },
     minLength: (v, n, label) => (String(v).trim().length >= n ? '' : `${label} must be at least ${n} characters.`)
   },
@@ -75,8 +104,9 @@ const HC = {
    */
   validateFields(rules) {
     let firstInvalid = null;
-    rules.forEach(({ input, checks }) => {
-      const value = input.value.trim();
+    rules.forEach(({ input, checks, raw }) => {
+      // raw: true -> don't trim (passwords may legitimately contain spaces in the middle)
+      const value = raw ? input.value : input.value.trim();
       const error = checks.map(check => check(value)).find(Boolean) || '';
       HC.setFieldError(input, error);
       if (error && !firstInvalid) firstInvalid = input;
@@ -108,6 +138,60 @@ const HC = {
     return path + query;
   },
 
+  /**
+   * Call the backend API. Always resolves (never throws) to { ok, status, data }.
+   * Cookies are sent automatically, so the login session just works.
+   *   const { ok, data } = await HC.api('POST', '/api/auth/login', { identifier, password });
+   */
+  async api(method, path, body) {
+    try {
+      const res = await fetch(HC.API_BASE + path, {
+        method,
+        credentials: 'include',
+        headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+        body: body !== undefined ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      return {
+        ok: false,
+        status: 0,
+        data: { error: 'Cannot reach the server. Make sure the backend is running (npm run dev in the backend folder).', code: 'NETWORK_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Show the server's field errors under the matching inputs.
+   *   fieldMap: { email: emailInput, phone: phoneInput, ... }
+   * Returns true if at least one field error was shown.
+   */
+  showServerErrors(fieldMap, data) {
+    let shown = false;
+    (data.fields || []).forEach(({ field, message }) => {
+      if (fieldMap[field]) {
+        HC.setFieldError(fieldMap[field], message);
+        if (!shown) fieldMap[field].focus();
+        shown = true;
+      }
+    });
+    return shown;
+  },
+
+  // Disable a submit button and show a spinner while a request is running
+  setLoading(button, loading, loadingText = 'Please wait...') {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalHtml = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${HC.escape(loadingText)}`;
+    } else {
+      button.disabled = false;
+      if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+    }
+  },
+
   clearFieldErrors(form) {
     form.querySelectorAll('.field-error').forEach(el => (el.textContent = ''));
     form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -115,12 +199,17 @@ const HC = {
 };
 window.HC = HC;
 
+/**
+ * Where the API lives. Normally the backend serves the website itself (same address),
+ * so this is ''. If the site is opened from the static server on :5500 or as a file,
+ * talk to the backend on :4000 instead.
+ */
+HC.API_BASE = (window.location.protocol === 'file:' || window.location.port === '5500') ? 'http://localhost:4000' : '';
+
 document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initToastContainer();
-  initProfileModal();
   initModals();
-  initRoleSwitcher();
   initDemoNotice();
   highlightActiveNavLink();
 });
@@ -169,18 +258,6 @@ function initNavbar() {
   const mobileBtn = document.querySelector('.mobile-menu-btn');
   const navLinks = document.querySelector('.nav-links');
 
-  // On phones the header buttons are hidden, so add "My Profile" inside the menu
-  if (navLinks && document.querySelector('.nav-actions [onclick*="authModal"]')) {
-    const item = document.createElement('li');
-    item.className = 'nav-mobile-only';
-    item.innerHTML = '<button type="button" class="nav-link-button"><i class="fas fa-user-circle"></i> My Demo Profile</button>';
-    item.querySelector('button').addEventListener('click', () => {
-      navLinks.classList.remove('active');
-      window.openModal('authModal');
-    });
-    navLinks.appendChild(item);
-  }
-
   if (mobileBtn && navLinks) {
     mobileBtn.setAttribute('aria-expanded', 'false');
     mobileBtn.addEventListener('click', () => {
@@ -194,6 +271,17 @@ function initNavbar() {
     });
   }
 }
+
+// Closes the phone menu and resets the ✕ icon back to ☰ (used after choosing an item)
+window.closeMobileMenu = function() {
+  const navLinks = document.querySelector('.nav-links');
+  const mobileBtn = document.querySelector('.mobile-menu-btn');
+  navLinks?.classList.remove('active');
+  if (mobileBtn) {
+    mobileBtn.setAttribute('aria-expanded', 'false');
+    mobileBtn.querySelector('i')?.classList.replace('fa-times', 'fa-bars');
+  }
+};
 
 function highlightActiveNavLink() {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -215,8 +303,8 @@ function initDemoNotice() {
   notice.id = 'demoNotice';
   notice.className = 'demo-notice';
   notice.innerHTML = `
-    <span><i class="fas fa-flask"></i> <strong>Demo mode:</strong> data is stored only in this browser.
-    No real payments, emails or logins happen.</span>
+    <span><i class="fas fa-flask"></i> <strong>Demo data:</strong> drives, campaigns and donations are stored only in this browser.
+    No real payments or emails happen. (Accounts and login are real.)</span>
     <button type="button" class="btn btn-sm btn-outline" id="resetDemoBtn"><i class="fas fa-undo"></i> Reset demo data</button>
   `;
   footer.appendChild(notice);
@@ -230,128 +318,20 @@ function initDemoNotice() {
 }
 
 /* ==========================================================================
-   Role Switcher (demo views)
-   ========================================================================== */
-function initRoleSwitcher() {
-  const roleSelect = document.getElementById('roleSwitcherSelect');
-  if (!roleSelect) return;
-
-  roleSelect.value = window.HCStore.getCurrentRole();
-  roleSelect.addEventListener('change', (e) => {
-    const selected = e.target.value;
-    window.HCStore.setCurrentRole(selected);
-    window.showToast(`Switched to ${selected.toUpperCase()} view (demo)`, 'info', 'fas fa-user-circle');
-    if (selected === 'ngo' && !window.location.pathname.includes('dashboard.html')) {
-      setTimeout(() => { window.location.href = HC.page('dashboard.html'); }, 800);
-    }
-  });
-}
-
-/* ==========================================================================
-   Demo Profile modal (replaces the old fake login)
-   The "Login" / "Join" buttons call openModal('authModal') on every page,
-   so we inject the modal here if the page doesn't have one.
-   ========================================================================== */
-function initProfileModal() {
-  const existing = document.getElementById('authModal');
-  if (existing) existing.remove(); // replace any static modal with the demo profile modal
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-backdrop';
-  modal.id = 'authModal';
-  modal.innerHTML = `
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
-      <div class="modal-header">
-        <h3 id="authModalTitle" style="font-size: 1.25rem;"><i class="fas fa-user-circle" style="color: var(--accent-gold-hover);"></i> Your Demo Profile</h3>
-        <button class="modal-close-btn" aria-label="Close">&times;</button>
-      </div>
-      <form id="profileForm" novalidate>
-        <div class="modal-body">
-          <div class="demo-callout">
-            <i class="fas fa-info-circle"></i>
-            Real accounts are not built yet. This profile has <strong>no password</strong> and is saved only in this browser.
-            It is used to pre-fill forms and to show <em>your</em> activity on the Impact page.
-          </div>
-          <div class="form-group">
-            <label for="profileName">Full Name *</label>
-            <input type="text" class="form-control" id="profileName" autocomplete="name">
-          </div>
-          <div class="form-group">
-            <label for="profileEmail">Email Address *</label>
-            <input type="email" class="form-control" id="profileEmail" autocomplete="email">
-          </div>
-          <div class="form-group">
-            <label for="profileRole">Primary Role</label>
-            <select class="form-control" id="profileRole">
-              <option value="volunteer">🙋 Volunteer</option>
-              <option value="donor">❤️ Donor / Supporter</option>
-              <option value="ngo">🏢 NGO Lead / Organizer</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('authModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Profile</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const form = modal.querySelector('#profileForm');
-  const nameInput = modal.querySelector('#profileName');
-  const emailInput = modal.querySelector('#profileEmail');
-  const roleInput = modal.querySelector('#profileRole');
-
-  // Pre-fill each time the modal opens
-  modal.addEventListener('hc:open', () => {
-    const profile = window.HCStore.getProfile();
-    nameInput.value = profile.name || '';
-    emailInput.value = profile.email || '';
-    roleInput.value = profile.role || 'volunteer';
-    HC.clearFieldErrors(form);
-  });
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const valid = HC.validateFields([
-      { input: nameInput, checks: [HC.validators.name] },
-      { input: emailInput, checks: [HC.validators.email] }
-    ]);
-    if (!valid) return;
-
-    const profile = window.HCStore.saveProfile({
-      name: nameInput.value.trim(),
-      email: emailInput.value.trim(),
-      role: roleInput.value
-    });
-    closeModal('authModal');
-    window.showToast(`Profile saved for ${profile.name}. (Demo profile — no password.)`, 'success', 'fas fa-user-check');
-
-    const roleSelect = document.getElementById('roleSwitcherSelect');
-    if (roleSelect) roleSelect.value = profile.role;
-    document.dispatchEvent(new CustomEvent('hc:profile-changed'));
-    if (profile.role === 'ngo' && !window.location.pathname.includes('dashboard.html')) {
-      setTimeout(() => { window.location.href = HC.page('dashboard.html'); }, 800);
-    }
-  });
-}
-
-/* ==========================================================================
    Modal Helpers
    ========================================================================== */
 function initModals() {
-  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) closeModal(backdrop.id);
-    });
-  });
-
-  document.querySelectorAll('.modal-close-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const backdrop = btn.closest('.modal-backdrop');
+  // Event delegation: works for modals added later too (e.g. the login modal from auth.js)
+  document.addEventListener('click', (e) => {
+    if (e.target.classList?.contains('modal-backdrop')) {
+      closeModal(e.target.id);
+      return;
+    }
+    const closeBtn = e.target.closest?.('.modal-close-btn');
+    if (closeBtn) {
+      const backdrop = closeBtn.closest('.modal-backdrop');
       if (backdrop) closeModal(backdrop.id);
-    });
+    }
   });
 
   // Escape key closes the open modal
