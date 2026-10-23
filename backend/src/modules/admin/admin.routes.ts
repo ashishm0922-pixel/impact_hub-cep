@@ -9,6 +9,9 @@ import { publicUser } from '../auth/auth.service';
 import { endAllSessions, endSession, startSession } from '../auth/session.service';
 import { adminLoginSchema, listUsersQuerySchema, updateUserStatusSchema } from './admin.schemas';
 import { authenticateAdmin } from './admin.service';
+import { audit } from '../audit/audit.service';
+import { AdminModel } from '../../models/admin.model';
+import { verifyPassword } from '../../utils/password';
 
 const PAGE_SIZE = 20;
 
@@ -21,13 +24,21 @@ export function createAdminRoutes(options: { loginLimit?: number } = {}) {
   // POST /api/admin/auth/login  { username, password }
   router.post('/auth/login', loginLimiter(options.loginLimit), async (req, res) => {
     const { username, password } = adminLoginSchema.parse(req.body);
-    const admin = await authenticateAdmin(username, password);
+    let admin;
+    try {
+      admin = await authenticateAdmin(username, password);
+    } catch (err) {
+      await audit(req, 'ADMIN_LOGIN_FAILED', { details: { username } });
+      throw err;
+    }
     await endSession('admin', req, res);
     await startSession('admin', admin._id, req, res);
+    await audit(req, 'ADMIN_LOGIN_SUCCESS', { actor: { type: 'admin', id: admin._id, name: admin.username, role: 'admin' } });
     res.json({ message: 'Logged in as admin.', admin: { id: String(admin._id), username: admin.username } });
   });
 
   router.post('/auth/logout', async (req, res) => {
+    await audit(req, 'ADMIN_LOGOUT');
     await endSession('admin', req, res);
     res.json({ message: 'Admin logged out.' });
   });
@@ -71,13 +82,24 @@ export function createAdminRoutes(options: { loginLimit?: number } = {}) {
   // PATCH /api/admin/users/:id/status  { status: approved | rejected | suspended, reason? }
   router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     const id = objectIdSchema.parse(req.params.id);
-    const { status, reason } = updateUserStatusSchema.parse(req.body);
+    const { status, reason, adminPassword } = updateUserStatusSchema.parse(req.body);
 
     if (status !== 'approved' && !reason) {
       throw new HttpError(400, 'Please give a short reason.', {
         code: 'VALIDATION_ERROR',
         fields: [{ field: 'reason', message: 'Please give a short reason.' }]
       });
+    }
+
+    // Blocking someone is serious: ask the admin to type their password again
+    if (status !== 'approved') {
+      const admin = await AdminModel.findById(req.admin!._id).select('+passwordHash');
+      if (!adminPassword || !admin || !(await verifyPassword(adminPassword, admin.passwordHash))) {
+        throw new HttpError(403, 'Please re-enter your admin password to confirm.', {
+          code: 'REAUTH_REQUIRED',
+          fields: [{ field: 'adminPassword', message: 'Incorrect admin password.' }]
+        });
+      }
     }
 
     const user = await UserModel.findById(id);
@@ -91,6 +113,7 @@ export function createAdminRoutes(options: { loginLimit?: number } = {}) {
 
     // A rejected or suspended user is logged out of every device immediately
     if (status !== 'approved') await endAllSessions('user', user._id);
+    await audit(req, 'USER_STATUS_CHANGED', { target: { type: 'User', id: user._id }, details: { name: user.name, status, reason } });
 
     res.json({ message: `${user.name} is now ${status}.`, user: publicUser(user) });
   });

@@ -284,7 +284,12 @@ describe('admin', () => {
     assert.equal(noReason.status, 400);
     assert.ok(fieldMessage(noReason.body, 'reason'));
 
-    const suspend = await admin.patch(`/api/admin/users/${id}/status`, { status: 'suspended', reason: 'Spam reports' });
+    const wrongPassword = await admin.patch(`/api/admin/users/${id}/status`, { status: 'suspended', reason: 'Spam reports', adminPassword: 'wrong' });
+    assert.equal(wrongPassword.status, 403);
+    assert.equal(wrongPassword.body.code, 'REAUTH_REQUIRED');
+    assert.equal((await user.get('/api/auth/me')).status, 200, 'still logged in after a failed attempt');
+
+    const suspend = await admin.patch(`/api/admin/users/${id}/status`, { status: 'suspended', reason: 'Spam reports', adminPassword: TEST_ADMIN.password });
     assert.equal(suspend.status, 200);
     assert.equal((await user.get('/api/auth/me')).status, 401);
 
@@ -298,7 +303,7 @@ describe('admin', () => {
     const signup = await client().post('/api/auth/signup', VALID_SIGNUP);
     const admin = client();
     await admin.post('/api/admin/auth/login', TEST_ADMIN);
-    await admin.patch(`/api/admin/users/${signup.body.user.id}/status`, { status: 'rejected', reason: 'Duplicate account' });
+    await admin.patch(`/api/admin/users/${signup.body.user.id}/status`, { status: 'rejected', reason: 'Duplicate account', adminPassword: TEST_ADMIN.password });
     const login = await client().post('/api/auth/login', { identifier: VALID_SIGNUP.email, password: VALID_SIGNUP.password });
     assert.equal(login.body.code, 'ACCOUNT_REJECTED');
     assert.match(login.body.error, /Duplicate account/);

@@ -15,6 +15,7 @@ const opportunitySchema = new Schema(
     hours: { type: Number, required: true, min: 1, max: 12 },
     volunteersNeeded: { type: Number, required: true, min: 1, max: 500 },
     skills: [{ type: String, lowercase: true, trim: true }],
+    skillLevel: { type: String, maxlength: 60, default: 'Open for all' },
     remote: { type: Boolean, default: false },
     imageUrl: { type: String },
     status: { type: String, enum: ['open', 'closed'], default: 'open' }

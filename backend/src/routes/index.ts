@@ -2,11 +2,11 @@ import { Router } from 'express';
 import { requireDb } from '../middlewares/security';
 import { createAdminRoutes } from '../modules/admin/admin.routes';
 import { createAuthRoutes } from '../modules/auth/auth.routes';
-import { campaignRoutes } from '../modules/campaigns/campaigns.routes';
 import { contactRoutes } from '../modules/contact/contact.routes';
 import { healthRoutes } from '../modules/health/health.routes';
-import { ngoRoutes } from '../modules/ngos/ngos.routes';
-import { opportunityRoutes } from '../modules/opportunities/opportunities.routes';
+import { adminDashboardRoutes } from '../modules/admin/admin-dashboard.routes';
+import { ngoRoutes } from '../modules/ngo/ngo.routes';
+import { participationRoutes } from '../modules/participation/participation.routes';
 
 export interface ApiOptions {
   loginLimit?: number;
@@ -25,10 +25,10 @@ export function createApiRouter(options: ApiOptions = {}) {
   api.use(requireDb);
   api.use('/auth', createAuthRoutes(options));
   api.use('/admin', createAdminRoutes(options));
-  api.use('/ngos', ngoRoutes);
-  api.use('/opportunities', opportunityRoutes);
-  api.use('/campaigns', campaignRoutes);
+  api.use('/admin', adminDashboardRoutes);
+  api.use('/ngo', ngoRoutes);
   api.use('/contact', contactRoutes);
+  api.use('/', participationRoutes); // /catalog, /me/*, /opportunities/:id/registrations, /campaigns/:id/pledges, /reports
 
   return api;
 }

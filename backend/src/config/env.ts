@@ -59,6 +59,9 @@ export const env = {
   // Serve the website (../frontend) from this server, so site + API share one origin
   serveFrontend: toBool(process.env.SERVE_FRONTEND, true),
 
+  // Fill an empty database with sample NGOs, drives and campaigns on start-up
+  seedSampleData: toBool(process.env.SEED_SAMPLE_DATA, true),
+
   // Set to 1 when running behind a proxy/load balancer (Render, Railway, Nginx)
   trustProxy: toBool(process.env.TRUST_PROXY, false)
 };

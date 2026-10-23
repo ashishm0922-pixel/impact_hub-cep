@@ -3,6 +3,7 @@ import os from 'node:os';
 import { createApp } from './app';
 import { env } from './config/env';
 import { connectDb } from './db/connect';
+import { seedSampleData } from './db/sample-data';
 import { adminPasswordMatches, upsertAdmin } from './modules/admin/admin.service';
 
 /** Creates the first admin from ADMIN_USERNAME / ADMIN_PASSWORD if it doesn't exist yet. */
@@ -35,6 +36,7 @@ export async function startServer(mongoUri = env.mongoUri) {
     await connectDb(mongoUri);
     console.log('Connected to MongoDB.');
     await ensureAdmin();
+    if (env.seedSampleData && (await seedSampleData())) console.log('Added sample NGOs, drives and campaigns (empty database).');
   } else {
     console.warn('MONGODB_URI is not set: the website works, but login/sign-up will answer 503.');
   }

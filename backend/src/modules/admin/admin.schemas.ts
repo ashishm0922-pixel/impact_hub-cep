@@ -36,5 +36,7 @@ export const updateUserStatusSchema = z.object({
   status: z.enum(['approved', 'rejected', 'suspended'], {
     errorMap: () => ({ message: 'Status must be approved, rejected or suspended.' })
   }),
-  reason: z.string().trim().max(200, 'Reason must be at most 200 characters.').optional()
+  reason: z.string().trim().max(200, 'Reason must be at most 200 characters.').optional(),
+  // Required for reject/suspend (checked in the route)
+  adminPassword: z.string().max(128).optional()
 });

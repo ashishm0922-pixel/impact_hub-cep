@@ -4,6 +4,7 @@ import { getSessionUser, requireUser } from '../../middlewares/auth';
 import rateLimit from 'express-rate-limit';
 import { loginLimiter, signupLimiter } from '../../middlewares/security';
 import { HttpError } from '../../utils/http-error';
+import { audit } from '../audit/audit.service';
 import { loginSchema, signupSchema, verifyEmailSchema } from './auth.schemas';
 import { sendVerificationEmail, verifyEmailToken } from './email-verification.service';
 import { authenticateUser, publicUser, registerUser } from './auth.service';
@@ -17,6 +18,11 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
   router.post('/signup', signupLimiter(options.signupLimit), async (req, res) => {
     const input = signupSchema.parse(req.body);
     const { user, emailSent } = await registerUser(input);
+    await audit(req, 'SIGNUP', {
+      actor: { type: 'user', id: user._id, name: user.name, role: user.role },
+      target: { type: 'User', id: user._id },
+      details: { email: user.email, role: user.role, emailSent }
+    });
     const emailNote = emailSent
       ? `We sent a verification link to ${user.email}.`
       : 'Email sending is not set up on the server yet, so no verification email was sent.';
@@ -32,16 +38,32 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
   // POST /api/auth/login  { identifier: email or 10-digit mobile, password }
   router.post('/login', loginLimiter(options.loginLimit), async (req, res) => {
     const input = loginSchema.parse(req.body);
-    const user = await authenticateUser(input);
+    let user;
+    try {
+      user = await authenticateUser(input);
+    } catch (err) {
+      // Record failed attempts (never the password) so admins can spot attacks
+      if (err instanceof HttpError) {
+        await audit(req, 'LOGIN_FAILED', { details: { identifier: 'email' in input ? input.email : input.phone, reason: err.code } });
+      }
+      throw err;
+    }
 
     // Throw away any old session on this browser first (prevents session fixation)
     await endSession('user', req, res);
     await startSession('user', user._id, req, res);
+    await audit(req, 'LOGIN_SUCCESS', {
+      actor: { type: 'user', id: user._id, name: user.name, role: user.role },
+      target: { type: 'User', id: user._id },
+      details: { role: user.role }
+    });
     res.json({ message: `Welcome back, ${user.name}!`, user: publicUser(user) });
   });
 
   // POST /api/auth/logout
   router.post('/logout', async (req, res) => {
+    const user = await getSessionUser(req, res);
+    if (user) await audit(req, 'LOGOUT', { actor: { type: 'user', id: user._id, name: user.name, role: user.role }, target: { type: 'User', id: user._id } });
     await endSession('user', req, res);
     res.json({ message: 'You have been logged out.' });
   });
@@ -63,6 +85,11 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
   router.post('/verify-email', async (req, res) => {
     const { token } = verifyEmailSchema.parse(req.body);
     const user = await verifyEmailToken(token);
+    await audit(req, 'EMAIL_VERIFIED', {
+      actor: { type: 'user', id: user._id, name: user.name, role: user.role },
+      target: { type: 'User', id: user._id },
+      details: { email: user.email }
+    });
     res.json({ message: 'Your email is verified. Thank you!', user: publicUser(user) });
   });
 
@@ -85,6 +112,7 @@ export function createAuthRoutes(options: { loginLimit?: number; signupLimit?: n
       throw new HttpError(503, 'Email sending is not set up on the server yet (SMTP settings missing in backend/.env). '
         + 'The verification link was printed in the server terminal instead.', { code: 'EMAIL_NOT_CONFIGURED' });
     }
+    await audit(req, 'VERIFICATION_RESENT', { target: { type: 'User', id: user._id } });
     res.json({ message: `A new verification link was sent to ${user.email}. Check your inbox and spam folder.` });
   });
 

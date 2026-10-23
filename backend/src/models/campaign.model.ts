@@ -9,6 +9,9 @@ const campaignSchema = new Schema(
     category: { type: String, enum: CATEGORIES, required: true },
     location: { type: String, required: true },
     goalPaise: { type: Number, required: true, min: 100000 }, // money in paise (integers, no rounding errors)
+    // Starting figures for sample campaigns only (shown as demo figures)
+    baselineRaisedPaise: { type: Number, default: 0 },
+    baselineSupporters: { type: Number, default: 0 },
     endDate: { type: Date, required: true },
     imageUrl: { type: String },
     featured: { type: Boolean, default: false },
@@ -20,17 +23,19 @@ const campaignSchema = new Schema(
 export const CampaignModel = model('Campaign', campaignSchema);
 
 /**
- * A donation is "succeeded" ONLY when the payment provider's verified webhook says so.
- * Payments are not connected yet, so nothing creates donations today.
+ * Money given to a campaign.
+ *  - "pledged":   DEMO pledge recorded by a logged-in user — NO money moved (payments not connected yet)
+ *  - "succeeded": a real payment confirmed by the payment provider's verified webhook (future)
  */
 const donationSchema = new Schema(
   {
     campaign: { type: Schema.Types.ObjectId, ref: 'Campaign', required: true, index: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User' },
+    user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
     donorName: { type: String, required: true },
     donorEmail: { type: String, required: true, lowercase: true },
     amountPaise: { type: Number, required: true, min: 1000 },
-    status: { type: String, enum: ['pending', 'succeeded', 'failed', 'refunded'], default: 'pending' },
+    status: { type: String, enum: ['pledged', 'pending', 'succeeded', 'failed', 'refunded'], default: 'pledged' },
+    reference: { type: String, required: true },
     provider: { type: String },
     providerOrderId: { type: String, unique: true, sparse: true },
     providerPaymentId: { type: String, unique: true, sparse: true }
