@@ -5,7 +5,7 @@
  */
 
 const adminState = {
-  status: 'pending',
+  status: null, // set on first load: "pending" if admin approval is on, otherwise all users
   search: '',
   page: 1,
   totalPages: 1,
@@ -152,18 +152,28 @@ function changePage(delta) {
 
 async function loadUsers() {
   const params = new URLSearchParams({ page: String(adminState.page) });
+  const firstLoad = adminState.status === null;
+  if (firstLoad) adminState.status = '';
   if (adminState.status) params.set('status', adminState.status);
   if (adminState.search) params.set('search', adminState.search);
 
   const body = document.getElementById('adminUsersBody');
-  body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  body.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
 
   const { ok, status, data } = await HC.api('GET', `/api/admin/users?${params}`);
   if (handleSessionLoss(status)) return;
   if (!ok) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #A93226;">${HC.escape(data.error || 'Could not load users.')}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #A93226;">${HC.escape(data.error || 'Could not load users.')}</td></tr>`;
     return;
   }
+
+  // First load: when admins must approve accounts, start on the "Pending" tab
+  if (firstLoad && data.requireAdminApproval && data.counts?.pending) {
+    adminState.status = 'pending';
+    document.getElementById('adminPanelHint').textContent = "Admin approval is ON: new accounts can't log in until you approve them.";
+    return loadUsers();
+  }
+  document.querySelectorAll('.admin-status-tab').forEach(t => t.classList.toggle('active', t.dataset.status === adminState.status));
 
   // Counts on the status tabs
   const counts = data.counts || {};
@@ -179,7 +189,7 @@ async function loadUsers() {
   document.getElementById('adminNextPage').disabled = data.page >= adminState.totalPages;
 
   body.innerHTML = data.users.length ? data.users.map(renderUserRow).join('') :
-    '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No users here.</td></tr>';
+    '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No users here.</td></tr>';
 }
 
 const ROLE_LABEL = { volunteer: 'Volunteer', donor: 'Donor', ngo: 'NGO' };
@@ -209,6 +219,9 @@ function renderUserRow(user) {
       <td><strong>${e(user.name)}</strong><div style="font-size: 0.8rem; color: var(--text-muted);">${e(user.email)}</div></td>
       <td>${e(user.phone)}</td>
       <td>${e(ROLE_LABEL[user.role] || user.role)}</td>
+      <td>${user.emailVerified
+        ? '<span class="badge-status-pill unlocked"><i class="fas fa-check"></i> Verified</span>'
+        : '<span class="badge-status-pill pending">Not verified</span>'}</td>
       <td style="white-space: nowrap;">${e(signedUp)}</td>
       <td>${STATUS_PILL[user.status] || e(user.status)}
         ${user.statusReason ? `<div style="font-size: 0.75rem; color: var(--text-muted); max-width: 200px;">${e(user.statusReason)}</div>` : ''}</td>

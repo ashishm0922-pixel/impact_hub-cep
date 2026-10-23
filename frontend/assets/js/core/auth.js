@@ -1,7 +1,8 @@
 /**
  * HopeConnect AI - Login & Sign-up (real accounts, stored in MongoDB by the backend)
  *
- * Flow:  Sign up → account is "pending" → an admin approves it → user can log in.
+ * Flow:  Sign up → go to the Login tab → log in right away → click the link in the
+ *        verification email → account is verified. (Optionally an admin must also approve.)
  * The session lives in an httpOnly cookie set by the server. This file never stores
  * passwords or tokens — it only asks the server "who am I?" (GET /api/auth/me).
  *
@@ -38,6 +39,7 @@ function setCurrentUser(user) {
   else if (!window.HCStore.getProfile().isDemo) window.HCStore.clearAccountProfile();
 
   renderAuthArea();
+  renderVerifyBanner();
   if (changed) {
     document.dispatchEvent(new CustomEvent('hc:auth-changed', { detail: { user } }));
     document.dispatchEvent(new CustomEvent('hc:profile-changed'));
@@ -72,7 +74,9 @@ function renderAuthArea() {
     area.innerHTML = Auth.user
       ? `<span class="auth-chip" title="${e(Auth.user.email)}">
            <i class="fas fa-user-circle"></i> ${e(Auth.user.name.split(' ')[0])}
-           <span class="auth-chip-role">${e(roleLabel[Auth.user.role] || Auth.user.role)}</span>
+           ${Auth.user.emailVerified
+             ? `<span class="auth-chip-role">${e(roleLabel[Auth.user.role] || Auth.user.role)}</span>`
+             : '<span class="auth-chip-role unverified" title="Email not verified yet">Unverified</span>'}
          </span>
          <button type="button" class="btn btn-sm btn-outline" data-auth="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>`
       : `<button type="button" class="btn btn-sm btn-outline" data-auth="login">Login</button>
@@ -105,6 +109,44 @@ document.addEventListener('click', (event) => {
   const action = btn.dataset.auth;
   if (action === 'logout') logout();
   else HC.openAuth(action);
+});
+
+/* ==========================================================================
+   "Please verify your email" banner (shown under the header while unverified)
+   ========================================================================== */
+function renderVerifyBanner() {
+  document.getElementById('verifyBanner')?.remove();
+  if (!Auth.user || Auth.user.emailVerified) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'verifyBanner';
+  banner.className = 'verify-banner';
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = `
+    <div class="container verify-banner-inner">
+      <span><i class="fas fa-envelope"></i> Please verify your email. We sent a link to <strong>${HC.escape(Auth.user.email)}</strong>.</span>
+      <button type="button" class="btn btn-xs btn-outline" id="resendVerifyBtn">Resend email</button>
+    </div>`;
+  document.querySelector('.site-header')?.insertAdjacentElement('afterend', banner);
+
+  banner.querySelector('#resendVerifyBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    HC.setLoading(btn, true, 'Sending...');
+    const { ok, data } = await HC.api('POST', '/api/auth/resend-verification');
+    HC.setLoading(btn, false);
+    if (ok) {
+      window.showToast(data.message, 'success', 'fas fa-paper-plane');
+    } else if (data.code === 'ALREADY_VERIFIED') {
+      refreshCurrentUser();
+    } else {
+      window.showToast(data.error || 'Could not send the email. Please try again.', 'error', 'fas fa-exclamation-circle');
+    }
+  });
+}
+
+// Another tab verified the email (verify-email page) → update this tab too
+window.addEventListener('focus', () => {
+  if (Auth.user && !Auth.user.emailVerified) refreshCurrentUser();
 });
 
 /* ==========================================================================
@@ -196,7 +238,7 @@ function buildAuthModal() {
             <li data-rule="letter">At least one letter</li>
             <li data-rule="number">At least one number</li>
           </ul>
-          <p class="form-hint"><i class="fas fa-user-shield"></i> New accounts are reviewed by an admin before you can log in.</p>
+          <p class="form-hint"><i class="fas fa-envelope-open-text"></i> We'll email you a link to verify your address. You can log in right away.</p>
         </div>
         <div class="modal-footer auth-footer">
           <span class="form-hint">Already have an account? <a href="#" data-switch-tab="login">Login</a></span>
@@ -204,18 +246,6 @@ function buildAuthModal() {
         </div>
       </form>
 
-      <!-- SIGN-UP SUCCESS -->
-      <div id="signupDone" class="auth-form" hidden>
-        <div class="modal-body" style="text-align: center;">
-          <div style="font-size: 2.6rem;">⏳</div>
-          <h3 style="margin: 0.4rem 0;">Account created</h3>
-          <p id="signupDoneMessage"></p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('authModal')">Close</button>
-          <button type="button" class="btn btn-primary" data-switch-tab="login">Go to login</button>
-        </div>
-      </div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -238,7 +268,6 @@ function switchAuthTab(tab) {
   const showLogin = tab === 'login';
   document.getElementById('loginForm').hidden = !showLogin;
   document.getElementById('signupForm').hidden = showLogin;
-  document.getElementById('signupDone').hidden = true;
   document.querySelector('.auth-tabs').hidden = false;
   document.querySelectorAll('.auth-tab').forEach(btn => {
     const active = btn.dataset.tab === tab;
@@ -321,6 +350,9 @@ function setupLoginForm() {
       window.closeModal('authModal');
       setCurrentUser(data.user);
       window.showToast(data.message || 'Logged in.', 'success', 'fas fa-user-check');
+      if (!data.user.emailVerified) {
+        setTimeout(() => window.showToast(`Please verify your email: check ${data.user.email} for our link.`, 'info', 'fas fa-envelope'), 600);
+      }
       return;
     }
 
@@ -408,13 +440,15 @@ function setupSignupForm() {
     HC.setLoading(submit, false);
 
     if (ok) {
+      const email = fields.email.value.trim();
       form.reset();
       HC.clearFieldErrors(form);
       updatePasswordRules('');
-      document.getElementById('signupDoneMessage').textContent = data.message;
-      form.hidden = true;
-      document.querySelector('.auth-tabs').hidden = true;
-      document.getElementById('signupDone').hidden = false;
+      // Go straight to the Login tab, ready to log in
+      switchAuthTab('login');
+      document.getElementById('loginIdentifier').value = email;
+      showAlert('loginAlert', data.message, 'success');
+      setTimeout(() => document.getElementById('loginPassword').focus(), 60);
       return;
     }
 

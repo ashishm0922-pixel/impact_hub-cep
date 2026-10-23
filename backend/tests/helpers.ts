@@ -1,3 +1,6 @@
+// Must run before anything else: makes the mailer store emails in memory instead of sending them
+process.env.NODE_ENV = 'test';
+
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -22,7 +25,7 @@ export async function clearDb() {
 }
 
 /** Starts the Express app on a random port and returns its base URL. */
-export async function startTestServer(options: ApiOptions = { loginLimit: 1000, signupLimit: 1000 }) {
+export async function startTestServer(options: ApiOptions = { loginLimit: 1000, signupLimit: 1000, resendLimit: 1000 }) {
   const server: Server = createApp(options).listen(0);
   await new Promise(resolve => server.once('listening', resolve));
   const { port } = server.address() as AddressInfo;

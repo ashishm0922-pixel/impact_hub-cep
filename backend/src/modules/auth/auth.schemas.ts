@@ -51,3 +51,10 @@ export const loginSchema = z
   });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const verifyEmailSchema = z.object({
+  token: z
+    .string({ required_error: 'The verification link is missing its token.' })
+    .trim()
+    .regex(/^[A-Za-z0-9_-]{20,100}$/, 'This verification link is invalid.')
+});

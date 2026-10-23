@@ -47,12 +47,31 @@ You should see `Connected to MongoDB.` and `Admin account "admin" created.`
 
 ```
 Sign up (name, email, 10-digit mobile, role, password)
-   └─► account saved with status "pending"         ← cannot log in yet
-Admin panel → Approve
-   └─► status "approved"                          ← can log in (email OR mobile + password)
-Admin → Reject / Suspend (reason required)
-   └─► cannot log in; suspended users are logged out of every device immediately
+   ├─► account is active right away              → the site switches to the Login tab
+   └─► a one-time verification link is emailed   (valid 24 h)
+Log in (email OR mobile + password)               → works immediately; a banner asks to verify
+Click the link in the email                       → pages/verify-email.html → "Email verified!"
+Admin panel → Suspend (reason required)           → logged out everywhere, cannot log in
 ```
+
+- Unverified users can log in and browse, but API actions such as joining a drive answer `403 EMAIL_NOT_VERIFIED`.
+- Each verification link works **once**; asking for a new one ("Resend email") makes the old link invalid.
+- Optional: `REQUIRE_ADMIN_APPROVAL=true` in `.env` means every new account must **also** be approved in the admin panel before it can log in.
+
+### Sending real emails
+Without SMTP settings, the verification email is **printed in the terminal** where the server runs (copy the link from there).
+To really send emails with Gmail:
+1. Turn on **2-Step Verification** for your Google account.
+2. Create an **App password** at <https://myaccount.google.com/apppasswords> (16 letters).
+3. In `backend/.env`, uncomment and fill in:
+   ```
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=yourname@gmail.com
+   SMTP_PASS="your-16-letter-app-password"
+   MAIL_FROM="HopeConnect <yourname@gmail.com>"
+   ```
+4. Restart the server. When you deploy, also set `APP_URL` to your website address so the links point there.
 
 | Protection | How |
 |---|---|
@@ -62,13 +81,14 @@ Admin → Reject / Suspend (reason required)
 | Admin vs user | Separate collections, cookies and sessions; the admin cookie is only sent to `/api/admin/*` |
 | Brute force | 10 failed logins per IP per 15 min (`LOGIN_RATE_LIMIT`); 20 sign-ups per IP per hour |
 | Account probing | Wrong password and unknown account give the **same** message and take the same time; the account status is only revealed after a correct password |
+| Email links | 256-bit one-time token, only its hash stored, expires in 24 h (TTL), sent via POST from the page so email scanners can't use it up; token removed from the address bar |
 | CSRF | SameSite cookies + Origin check + JSON-only bodies |
 | Session fixation | Logging in always replaces the old session |
 | Validation | Same rules in the browser and the server (zod); mobile must be exactly 10 digits starting with 6–9 |
 | Headers | helmet (CSP, no framing, etc.) |
 | Duplicates | Unique indexes on email, phone and username, plus a friendly per-field message |
 
-Set `AUTO_APPROVE_USERS=true` in `.env` only if you ever want sign-ups to be approved automatically.
+
 
 ## 4. Scripts
 
@@ -79,7 +99,7 @@ Set `AUTO_APPROVE_USERS=true` in `.env` only if you ever want sign-ups to be app
 | `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
 | `npm run seed` | Add sample NGOs, drives and a campaign |
-| `npm test` | 43 automated tests (uses a temporary in-memory MongoDB) |
+| `npm test` | 57 automated tests (uses a temporary in-memory MongoDB) |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` / `npm start` | Compile to `dist/` and run in production |
 
@@ -88,7 +108,9 @@ Set `AUTO_APPROVE_USERS=true` in `.env` only if you ever want sign-ups to be app
 | Method | Path | Who | Notes |
 |---|---|---|---|
 | GET | `/api/health` | anyone | `{ status, database }` |
-| POST | `/api/auth/signup` | anyone | `{ name, email, phone, role, password, confirmPassword }` → pending account |
+| POST | `/api/auth/signup` | anyone | `{ name, email, phone, role, password, confirmPassword }` → account + verification email |
+| POST | `/api/auth/verify-email` | anyone | `{ token }` from the email link |
+| POST | `/api/auth/resend-verification` | user | new link (3 per 15 min) |
 | POST | `/api/auth/login` | anyone | `{ identifier: email or mobile, password }` → sets cookie |
 | POST | `/api/auth/logout` | anyone | ends the session |
 | GET | `/api/auth/session` | anyone | `{ user }` or `{ user: null }` (always 200) |
@@ -100,7 +122,7 @@ Set `AUTO_APPROVE_USERS=true` in `.env` only if you ever want sign-ups to be app
 | PATCH | `/api/admin/users/:id/status` | admin | `{ status: approved/rejected/suspended, reason }` |
 | GET | `/api/ngos`, `/api/opportunities`, `/api/campaigns` | anyone | listings |
 | POST | `/api/ngos` | anyone | NGO application → `pending` |
-| POST | `/api/opportunities/:id/registrations` | user | uses the account's name/email/phone |
+| POST | `/api/opportunities/:id/registrations` | verified user | uses the account's name/email/phone |
 | POST | `/api/campaigns/:id/donations` | – | `501`: payments not connected yet (on purpose) |
 | POST | `/api/contact` | anyone | contact message |
 
@@ -120,13 +142,13 @@ backend/
 │   │   ├── security.ts        CSRF check, rate limits, "database connected" check
 │   │   └── error-handler.ts   404 + one JSON error format
 │   ├── modules/               One folder per feature (routes + validation + service)
-│   │   ├── auth/              sign-up, login, logout, sessions
+│   │   ├── auth/              sign-up, login, logout, sessions, email verification
 │   │   ├── admin/             admin login, user approval
 │   │   └── health/ ngos/ opportunities/ campaigns/ contact/
 │   ├── shared/schemas.ts      Shared validation (name, email, phone, password...)
-│   ├── utils/                 password hashing, tokens, HttpError
+│   ├── utils/                 password hashing, tokens, mailer, HttpError
 │   └── scripts/               create-admin, seed, dev-local
-├── tests/                     auth.test.ts + helpers (in-memory MongoDB)
+├── tests/                     auth + email-verification tests (in-memory MongoDB)
 ├── .env.example               Template — copy to .env
 └── tsconfig.json / tsconfig.build.json
 ```

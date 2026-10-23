@@ -29,8 +29,22 @@ export const env = {
     .map(origin => origin.trim())
     .filter(Boolean),
 
-  // false (default): every new account waits for an admin to approve it
-  autoApproveUsers: toBool(process.env.AUTO_APPROVE_USERS, false),
+  // false (default): users can log in right after sign-up and verify their email.
+  // true: every new account must ALSO be approved by an admin before logging in.
+  requireAdminApproval: toBool(process.env.REQUIRE_ADMIN_APPROVAL, false),
+
+  // Public address of the website, used to build the link in verification emails
+  appUrl: (process.env.APP_URL || `http://localhost:${toNumber(process.env.PORT, 4000)}`).replace(/\/+$/, ''),
+
+  // Email (SMTP). If SMTP_HOST is empty, emails are NOT sent: the link is printed in the terminal instead.
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: toNumber(process.env.SMTP_PORT, 587),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || ''
+  },
+  mailFrom: process.env.MAIL_FROM || 'HopeConnect <no-reply@hopeconnect.local>',
+  verifyEmailHours: toNumber(process.env.VERIFY_EMAIL_HOURS, 24),
 
   userSessionDays: toNumber(process.env.USER_SESSION_DAYS, 7),
   adminSessionHours: toNumber(process.env.ADMIN_SESSION_HOURS, 8),

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { env } from '../../config/env';
 import { requireAdmin } from '../../middlewares/auth';
 import { loginLimiter } from '../../middlewares/security';
 import { USER_STATUSES, UserModel } from '../../models/user.model';
@@ -59,6 +60,7 @@ export function createAdminRoutes(options: { loginLimit?: number } = {}) {
 
     res.json({
       users: users.map(u => ({ ...publicUser(u), statusReason: u.statusReason, reviewedAt: u.reviewedAt, lastLoginAt: u.lastLoginAt })),
+      requireAdminApproval: env.requireAdminApproval,
       total,
       page,
       pageSize: PAGE_SIZE,

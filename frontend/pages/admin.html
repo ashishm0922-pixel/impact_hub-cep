@@ -15,8 +15,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=5">
-  <link rel="stylesheet" href="../assets/css/responsive.css?v=5">
+  <link rel="stylesheet" href="../assets/css/style.css?v=7">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=7">
 </head>
 <body>
 
@@ -66,8 +66,8 @@
     <section id="adminPanelView" hidden aria-labelledby="adminPanelTitle">
       <div class="admin-topbar">
         <div>
-          <h2 id="adminPanelTitle" style="margin-bottom: 0.2rem;">User approvals</h2>
-          <p style="font-size: 0.9rem; margin: 0;">New accounts can't log in until you approve them.</p>
+          <h2 id="adminPanelTitle" style="margin-bottom: 0.2rem;">Users</h2>
+          <p style="font-size: 0.9rem; margin: 0;" id="adminPanelHint">Manage accounts: see who verified their email, suspend or re-activate users.</p>
         </div>
         <button type="button" class="btn btn-sm btn-outline" id="adminRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
       </div>
@@ -88,7 +88,7 @@
         <div class="table-scroll">
           <table class="custom-table">
             <thead>
-              <tr><th>User</th><th>Mobile</th><th>Role</th><th>Signed up</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>User</th><th>Mobile</th><th>Role</th><th>Email</th><th>Signed up</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="adminUsersBody"></tbody>
           </table>
@@ -126,9 +126,9 @@
   </div>
 
   <!-- Scripts (no auth.js here: admins use a separate login) -->
-  <script src="../assets/js/core/seed-data.js?v=5"></script>
-  <script src="../assets/js/core/store.js?v=5"></script>
-  <script src="../assets/js/core/app.js?v=5"></script>
-  <script src="../assets/js/pages/admin.js?v=5"></script>
+  <script src="../assets/js/core/seed-data.js?v=7"></script>
+  <script src="../assets/js/core/store.js?v=7"></script>
+  <script src="../assets/js/core/app.js?v=7"></script>
+  <script src="../assets/js/pages/admin.js?v=7"></script>
 </body>
 </html>

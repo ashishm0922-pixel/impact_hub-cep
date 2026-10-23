@@ -26,6 +26,7 @@
 | Validation rules (browser, same messages) | `frontend/assets/js/core/app.js` → `HC.validators` |
 | Sign-up / login logic | `backend/src/modules/auth/auth.service.ts` |
 | Sessions + cookies | `backend/src/modules/auth/session.service.ts` |
+| Email verification | `backend/src/modules/auth/email-verification.service.ts`, `utils/mailer.ts`, `frontend/pages/verify-email.html` |
 | Route guards | `backend/src/middlewares/auth.ts` (`requireUser`, `requireAdmin`) |
 | Admin approval | `backend/src/modules/admin/` + `frontend/pages/admin.html` |
 | Login UI | `frontend/assets/js/core/auth.js` |

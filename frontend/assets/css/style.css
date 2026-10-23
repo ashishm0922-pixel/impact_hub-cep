@@ -2564,3 +2564,86 @@ textarea.form-control {
   padding-top: 1rem;
   border-top: 1px solid var(--border-light);
 }
+
+/* ==========================================================================
+   v6: Email verification (banner + page)
+   ========================================================================== */
+.auth-chip-role.unverified {
+  background: var(--accent-orange-light);
+  color: var(--accent-orange-hover);
+}
+
+.verify-banner {
+  background: var(--accent-orange-light);
+  border-bottom: 1px solid #F8D5C2;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.verify-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+.verify-banner i {
+  color: var(--accent-orange);
+  margin-right: 0.3rem;
+}
+
+.verify-banner strong {
+  overflow-wrap: anywhere;
+}
+
+.verify-page {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.verify-card {
+  max-width: 480px;
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.verify-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  color: var(--accent-gold-hover);
+}
+
+.verify-card h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.verify-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+/* v6: <body> is a flex column, and flex children default to min-width:auto, which let a
+   wide table stretch the WHOLE page sideways. Allow every top-level block to shrink so
+   wide tables scroll inside their own box instead. */
+body > * {
+  min-width: 0;
+}
+
+.admin-shell {
+  width: 100%;
+}

@@ -29,6 +29,9 @@ opportunityRoutes.post('/:id/registrations', requireUser, async (req, res) => {
   const id = objectIdSchema.parse(req.params.id);
   const data = registrationSchema.parse(req.body);
   const user = req.user!;
+  if (!user.emailVerified) {
+    throw new HttpError(403, 'Please verify your email before joining a drive.', { code: 'EMAIL_NOT_VERIFIED' });
+  }
 
   const opportunity = await OpportunityModel.findById(id);
   if (!opportunity) throw new HttpError(404, 'Opportunity not found.', { code: 'NOT_FOUND' });

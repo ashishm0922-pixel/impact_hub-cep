@@ -11,6 +11,7 @@ import { opportunityRoutes } from '../modules/opportunities/opportunities.routes
 export interface ApiOptions {
   loginLimit?: number;
   signupLimit?: number;
+  resendLimit?: number;
 }
 
 /** Every module's routes, mounted under /api in app.ts */

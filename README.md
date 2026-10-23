@@ -24,7 +24,8 @@ hopeconnect-ai/
 │   │   ├── ngos.html          ← NGO directory + profiles
 │   │   ├── impact.html        ← your hours, donations, badges, certificate
 │   │   ├── dashboard.html     ← organizer portal
-│   │   ├── admin.html         ← admin panel: approve / reject / suspend accounts
+│   │   ├── admin.html         ← admin panel: users, verification status, suspend
+│   │   ├── verify-email.html  ← opened from the link in the verification email
 │   │   ├── about.html
 │   │   └── contact.html       ← contact form + NGO registration
 │   └── assets/
@@ -43,7 +44,7 @@ hopeconnect-ai/
 │           │   └── certificate.js        ← canvas certificate (impact)
 │           └── pages/         ← one script per page
 │               ├── home.js, volunteer.js, campaigns.js, ngos.js
-│               ├── contact.js, impact.js, organizer.js, admin.js
+│               ├── contact.js, impact.js, organizer.js, admin.js, verify-email.js
 │
 ├── backend/                   ← API + serves the website: Express + TypeScript + MongoDB Atlas
 │   ├── src/
@@ -55,7 +56,7 @@ hopeconnect-ai/
 │   │   ├── modules/           ← one folder per feature: auth/ admin/ ngos/ opportunities/ ...
 │   │   ├── shared/ utils/     ← validation rules, password hashing, tokens
 │   │   └── scripts/           ← create-admin, seed, dev-local
-│   ├── tests/                 ← 43 auth/API tests (in-memory MongoDB)
+│   ├── tests/                 ← 57 auth/API tests (in-memory MongoDB)
 │   └── .env.example           ← copy to .env (MongoDB Atlas URI, admin login)
 │
 ├── docs/
@@ -97,11 +98,13 @@ Run the tests:
 npm test
 ```
 
-## Accounts & admin approval
+## Accounts & email verification
 1. **Sign up** (header → *Sign up*): full name, email, 10-digit mobile number (6–9 first), role and password.
-2. The account is **pending**. Logging in shows "waiting for admin approval".
-3. The **admin** approves it in the admin panel (or rejects / suspends it with a reason).
-4. The user **logs in** with their email **or** mobile number plus password.
+2. The site switches to **Login** with your email filled in. **Log in right away** (email or mobile + password).
+3. A **verification link** is emailed (or printed in the server terminal until email is set up, see [backend/README.md](backend/README.md#sending-real-emails)).
+4. Click it → **Email verified!** The "Please verify your email" banner disappears.
+5. The **admin panel** (`/pages/admin.html`) shows every user and whether they're verified, and can suspend accounts.
+   Set `REQUIRE_ADMIN_APPROVAL=true` in `backend/.env` if admins should also approve every new account.
 
 ## Try the main journeys
 1. **Volunteer:** Volunteer → search "pune tree" → *Join Opportunity* → invalid name/email/phone is rejected → registered.
@@ -118,7 +121,7 @@ Use **Reset demo data** in any page footer to start over.
 | Search, filters, registration, organizer tools | ✅ Working, but data is still in browser storage (demo) |
 | Recommendations | ✅ Transparent rule-based scoring (not machine learning) |
 | Donations | ⚠️ Demo only: no payment provider, no money moves |
-| Sign-up / login / admin approval | ✅ Real (MongoDB, hashed passwords, secure sessions) |
+| Sign-up / login / email verification / admin panel | ✅ Real (MongoDB, hashed passwords, secure sessions; emails need SMTP settings) |
 | Contact form | ⚠️ Saved in browser; no email is sent |
 | NGO verification | ⚠️ New NGOs stay "Pending"; no admin review yet |
 | Certificates | ⚠️ Generated in-browser; not independently verifiable |

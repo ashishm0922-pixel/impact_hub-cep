@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
+import { env } from '../src/config/env';
 import { SessionModel } from '../src/models/session.model';
 import { UserModel } from '../src/models/user.model';
 import { upsertAdmin } from '../src/modules/admin/admin.service';
@@ -9,6 +10,9 @@ let stopDb: () => Promise<void>;
 let server: Awaited<ReturnType<typeof startTestServer>>;
 
 before(async () => {
+  // This file tests the OPTIONAL mode where an admin must approve every new account.
+  // (The default email-verification flow is tested in email-verification.test.ts.)
+  env.requireAdminApproval = true;
   stopDb = await startTestDb();
   server = await startTestServer();
 });
@@ -166,7 +170,7 @@ describe('user login', () => {
 
     const me = await c.get('/api/auth/me');
     assert.equal(me.status, 200);
-    assert.deepEqual(Object.keys(me.body.user).sort(), ['createdAt', 'email', 'id', 'name', 'phone', 'role', 'status']);
+    assert.deepEqual(Object.keys(me.body.user).sort(), ['createdAt', 'email', 'emailVerified', 'id', 'name', 'phone', 'role', 'status']);
 
     // The token is stored hashed in the DB, never as-is
     const token = c.cookies.get('hc_session')!;

@@ -3,9 +3,9 @@
 ## Phase 1: Make it real (next)
 - [x] MongoDB Atlas connection (Mongoose)
 - [x] Accounts: sign-up/login with hashed passwords, httpOnly session cookies, roles (volunteer, donor, NGO)
-- [x] Admin approval of new accounts (approve / reject / suspend)
-- [ ] Forgot password / change password (needs an email service)
-- [ ] Email verification on sign-up
+- [x] Email verification on sign-up (one-time link) + optional admin approval
+- [ ] Connect a real email service (Gmail SMTP / Brevo / Resend)
+- [ ] Forgot password / change password (uses the same email service)
 - [ ] Switch `frontend/assets/js/core/store.js` from localStorage to the API, one feature at a time (start with volunteer registration)
 - [ ] Organizer API: create/close campaigns and drives, mark attendance
 - [ ] Admin panel: also verify or reject NGOs (check registration + 80G/12A documents)

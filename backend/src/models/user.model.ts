@@ -4,7 +4,7 @@ import { jsonOptions } from './shared';
 export const USER_ROLES = ['volunteer', 'donor', 'ngo'] as const;
 
 /**
- * pending   → just signed up, waiting for an admin
+ * pending   → waiting for an admin (only used when REQUIRE_ADMIN_APPROVAL=true)
  * approved  → can log in
  * rejected  → admin declined the sign-up
  * suspended → was approved, then blocked by an admin
@@ -21,6 +21,9 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: USER_ROLES, default: 'volunteer' },
     status: { type: String, enum: USER_STATUSES, default: 'pending', index: true },
+    // Becomes true when the user clicks the link in the verification email
+    emailVerified: { type: Boolean, default: false },
+    emailVerifiedAt: { type: Date },
     statusReason: { type: String, maxlength: 200 },
     reviewedAt: { type: Date },
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
