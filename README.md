@@ -2,9 +2,8 @@
 
 A platform that connects **volunteers**, **donors** and **NGOs**: discover verified NGOs, join volunteer drives, support campaigns, and track your impact.
 
-> **Status: working demo frontend + backend foundation.**
-> The website runs fully in the browser and saves data in `localStorage`.
-> **No real payments, emails or logins happen.** Simulated features are labelled "demo" in the UI.
+> **Status: working platform with real accounts, verification emails and an admin panel, backed by MongoDB.**
+> **Payments are not connected yet:** donations are demo pledges (no money moves), and they are labelled as such in the UI.
 
 ---
 
@@ -46,7 +45,7 @@ hopeconnect-ai/
 │           │   └── certificate.js        ← canvas certificate (impact)
 │           └── pages/         ← one script per page
 │               ├── home.js, volunteer.js, campaigns.js, ngos.js
-│               ├── contact.js, impact.js, organizer.js, admin.js, verify-email.js
+│               ├── contact.js, impact.js, dashboard.js, rewards.js, admin.js, verify-email.js
 │
 ├── backend/                   ← API + serves the website: Express + TypeScript + MongoDB Atlas
 │   ├── src/
@@ -55,21 +54,15 @@ hopeconnect-ai/
 │   │   ├── db/                ← MongoDB connection
 │   │   ├── models/            ← Mongoose models (user, admin, session, ngo, ...)
 │   │   ├── middlewares/       ← auth guards, security (CSRF, rate limits), errors
-│   │   ├── modules/           ← one folder per feature: auth/ admin/ ngos/ opportunities/ ...
+│   │   ├── modules/           ← one folder per feature: auth/ admin/ ngo/ participation/ catalog/ ...
 │   │   ├── shared/ utils/     ← validation rules, password hashing, tokens
 │   │   └── scripts/           ← create-admin, seed, dev-local
 │   ├── tests/                 ← 82 auth/API tests (in-memory MongoDB)
 │   └── .env.example           ← copy to .env (MongoDB Atlas URI, admin login)
 │
-├── docs/
-│   ├── ARCHITECTURE.md        ← how the pieces fit together + how to add things
-│   └── ROADMAP.md             ← what to build next
-│
-├── scripts/
-│   └── serve-frontend.mjs     ← zero-dependency static server for frontend/
-│
-└── archive/
-    └── original-prototype.zip ← untouched copy of the first prototype
+└── docs/
+    ├── ARCHITECTURE.md        ← how the pieces fit together + how to add things
+    └── ROADMAP.md             ← what to build next
 ```
 
 ## Quick start

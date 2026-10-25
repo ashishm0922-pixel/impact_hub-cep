@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { CATEGORIES } from '../models/shared';
 
 /**
  * Validation rules shared by several modules.
@@ -37,17 +36,7 @@ export const passwordSchema = requiredString('Password')
   .regex(/\d/, 'Password must include at least one number.')
   .refine(value => value.trim() === value, 'Password cannot start or end with a space.');
 
-export const categorySchema = z.enum(CATEGORIES, {
-  errorMap: () => ({ message: `Category must be one of: ${CATEGORIES.join(', ')}.` })
-});
-
 export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id.');
-
-export const listQuerySchema = z.object({
-  category: categorySchema.optional(),
-  search: z.string().trim().max(100).optional(),
-  city: z.string().trim().max(40).optional()
-});
 
 /** Escape text before using it inside a MongoDB $regex (prevents regex injection). */
 export function escapeRegex(text: string) {

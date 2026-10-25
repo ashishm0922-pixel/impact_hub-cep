@@ -47,7 +47,14 @@ export function createApp(options: ApiOptions = {}) {
   app.use('/api', notFound);
 
   // Serve the website too, so site + API share one origin (simplest and safest for cookies)
-  if (env.serveFrontend) app.use(express.static(FRONTEND_DIR, { extensions: ['html'] }));
+  // "no-cache" = the browser may keep a copy but must ask the server "has it changed?" every time
+  // (a cheap 304 answer when it hasn't). This stops people seeing an old stylesheet after an update.
+  if (env.serveFrontend) {
+    app.use(express.static(FRONTEND_DIR, {
+      extensions: ['html'],
+      setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache')
+    }));
+  }
 
   app.use(notFound);
   app.use(errorHandler);

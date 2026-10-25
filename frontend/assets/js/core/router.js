@@ -144,6 +144,14 @@
   }
 
   async function swapPage(nextDoc) {
+    // 0. The next page needs a stylesheet we haven't loaded (e.g. after an update)? A swap would look
+    //    broken, so do a normal full page load instead (the caller falls back to that on any error).
+    const loadedSheets = new Set([...document.querySelectorAll('link[rel="stylesheet"]')].map(l => l.getAttribute('href')));
+    for (const link of nextDoc.head.querySelectorAll('link[rel="stylesheet"]')) {
+      const href = link.getAttribute('href');
+      if (href && !href.startsWith('http') && !loadedSheets.has(href)) throw new Error(`New stylesheet needed: ${href}`);
+    }
+
     // 1. Let the old page clean up its listeners and globals
     HC.cleanupPage();
     document.querySelectorAll('.modal-backdrop.active').forEach(m => window.closeModal(m.id));

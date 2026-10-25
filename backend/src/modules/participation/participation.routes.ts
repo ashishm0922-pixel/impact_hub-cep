@@ -8,7 +8,6 @@ import { OpportunityModel, RegistrationModel } from '../../models/opportunity.mo
 import { REPORT_REASONS, REPORT_TARGETS, ReportModel } from '../../models/report.model';
 import { AVAILABILITY } from '../../models/shared';
 import { nameSchema, objectIdSchema } from '../../shared/schemas';
-import { UserModel } from '../../models/user.model';
 import { publicUser } from '../auth/auth.service';
 import { donorLeaderboard, publicName, volunteerLeaderboard } from '../admin/leaderboard.service';
 import { todayISODate, toISODate } from '../../utils/dates';

@@ -5,7 +5,6 @@
   "scripts": {
     "start": "npm --prefix backend run dev",
     "start:local": "npm --prefix backend run dev:local",
-    "frontend": "node scripts/serve-frontend.mjs",
     "backend:install": "npm --prefix backend install",
     "admin:create": "npm --prefix backend run admin:create",
     "test": "npm --prefix backend test",
