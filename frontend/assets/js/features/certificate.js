@@ -195,7 +195,14 @@
 
     let current = null;
 
-    async function load() {
+    // Several events can ask for a reload at once; run one request at a time
+    let loading = null;
+    function load() {
+      if (!loading) loading = loadCertificate().finally(() => { loading = null; });
+      return loading;
+    }
+
+    async function loadCertificate() {
       const user = window.Auth?.user;
       const loginBtn = '<button type="button" class="btn btn-primary" data-auth="login"><i class="fas fa-sign-in-alt"></i> Log in</button>';
       if (!user) {
