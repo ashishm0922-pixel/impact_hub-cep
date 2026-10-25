@@ -310,3 +310,114 @@ describe('admin: verification queue, overview, flagged content, audit logs', () 
     }
   });
 });
+
+describe('profile preferences, tiers and the public leaderboard', () => {
+  test('profile can be edited; bad input is rejected; email/phone cannot be changed', async () => {
+    const user = await account('donor', 'Asha Verma');
+    const bad = await user.c.patch('/api/me/profile', { name: 'A1', city: '123' });
+    assert.equal(bad.status, 400);
+    const ok = await user.c.patch('/api/me/profile', { name: 'Asha Verma', city: 'Pune', anonymous: true });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.user.city, 'Pune');
+    assert.equal(ok.body.user.anonymous, true);
+    const sneaky = await user.c.patch('/api/me/profile', { name: 'Asha Verma', email: 'hacker@example.com', phone: '9000000000' });
+    assert.equal(sneaky.body.user.email, user.email, 'email unchanged');
+    assert.equal((await client().patch('/api/me/profile', { name: 'Nobody' })).status, 401);
+  });
+
+  test('public leaderboard shows "First L." only, hides anonymous people, and never leaks emails', async () => {
+    const ngo = await verifiedNgo();
+    const campaign = (await ngo.c.post('/api/ngo/campaigns', {
+      title: 'Books for Every Child', category: 'Education', goal: 20000, location: 'Pune',
+      endDate: daysFromToday(30).toISOString().slice(0, 10), description: 'Buy school books for 200 children from low-income families.'
+    })).body.campaign;
+
+    const open = await account('donor', 'Rohan Patil');
+    const hidden = await account('donor', 'Secret Giver');
+    await hidden.c.patch('/api/me/profile', { name: 'Secret Giver', city: 'Mumbai', anonymous: true });
+    await open.c.post(`/api/campaigns/${campaign.id}/pledges`, { amount: 3000 });
+    await hidden.c.post(`/api/campaigns/${campaign.id}/pledges`, { amount: 12000 });
+
+    const board = await client().get('/api/leaderboard?type=donors');
+    assert.equal(board.status, 200, 'public: no login needed');
+    const names = board.body.rows.map((r: any) => r.name);
+    assert.deepEqual(names, ['Anonymous Donor', 'Rohan P.']);
+    assert.equal(board.body.rows[0].city, '', 'anonymous donors show no city');
+    const text = JSON.stringify(board.body);
+    assert.equal(text.includes('@'), false, 'no email addresses');
+    assert.equal(text.includes('Secret'), false);
+    // Tiers follow the Rewards page: ₹2,500+ Silver, ₹10,000+ Gold
+    assert.equal(board.body.rows[0].tier, 'Gold');
+    assert.equal(board.body.rows[1].tier, 'Silver');
+    assert.equal(board.body.rows[0].points, 120);
+  });
+
+  test('volunteer tiers follow confirmed hours (15 → Silver)', async () => {
+    const ngo = await verifiedNgo();
+    const v = await account('volunteer', 'Meera Joshi');
+    for (let i = 0; i < 4; i++) {
+      const drive = (await ngo.c.post('/api/ngo/opportunities', { ...DRIVE, title: `Lake drive number ${i}`, hours: 4 })).body.opportunity;
+      const reg = (await v.c.post(`/api/opportunities/${drive.id}/registrations`, {})).body.registration;
+      await OpportunityModel.updateOne({ _id: drive.id }, { date: daysFromToday(-1) });
+      await ngo.c.patch(`/api/ngo/registrations/${reg.id}`, { status: 'attended' });
+    }
+    const board = await client().get('/api/leaderboard?type=volunteers');
+    assert.equal(board.body.rows[0].name, 'Meera J.');
+    assert.equal(board.body.rows[0].hours, 16);
+    assert.equal(board.body.rows[0].tier, 'Silver');
+    assert.equal(JSON.stringify(board.body).includes('@'), false);
+  });
+});
+
+describe('nothing can be created or joined without logging in', () => {
+  const ID = '64b7f9f9f9f9f9f9f9f9f9f9';
+
+  test('every action that creates or joins something answers 401 to a visitor', async () => {
+    const guest = client();
+    const attempts: Array<[string, string, unknown]> = [
+      ['POST', `/api/opportunities/${ID}/registrations`, {}],          // join a drive
+      ['POST', `/api/campaigns/${ID}/pledges`, { amount: 500 }],       // donate to a campaign
+      ['POST', '/api/ngo/campaigns', { ...DRIVE, goal: 5000 }],        // create a campaign
+      ['POST', '/api/ngo/opportunities', DRIVE],                       // create a drive
+      ['POST', '/api/ngo/organization', ORG],                          // register an organization
+      ['PATCH', `/api/ngo/registrations/${ID}`, { status: 'attended' }],
+      ['POST', `/api/me/registrations/${ID}/cancel`, {}],
+      ['POST', '/api/reports', { targetType: 'ngo', targetId: ID, reason: 'spam' }],
+      ['PATCH', '/api/me/profile', { name: 'Someone' }]
+    ];
+    for (const [method, path, body] of attempts) {
+      const res = await guest.request(method, path, body);
+      assert.equal(res.status, 401, `${method} ${path} should need login`);
+      assert.equal(res.body.code, 'NOT_AUTHENTICATED');
+    }
+  });
+
+  test('browsing stays public: catalog and leaderboard need no login', async () => {
+    assert.equal((await client().get('/api/catalog')).status, 200);
+    assert.equal((await client().get('/api/leaderboard?type=donors')).status, 200);
+  });
+
+  test('only NGO accounts can create campaigns and drives (volunteers and donors cannot)', async () => {
+    for (const role of ['volunteer', 'donor'] as const) {
+      const user = await account(role);
+      for (const path of ['/api/ngo/campaigns', '/api/ngo/opportunities', '/api/ngo/organization']) {
+        const res = await user.c.post(path, {});
+        assert.equal(res.status, 403, `${role} → ${path}`);
+        assert.equal(res.body.code, 'WRONG_ROLE');
+      }
+    }
+  });
+
+  test('a logged-in account whose email is not verified cannot join or pledge', async () => {
+    const ngo = await verifiedNgo();
+    const drive = (await ngo.c.post('/api/ngo/opportunities', DRIVE)).body.opportunity;
+    const c = client();
+    await c.post('/api/auth/signup', { name: 'No Verify', email: 'noverify@example.com', phone: '9822200001', role: 'volunteer', password: 'Helping123', confirmPassword: 'Helping123' });
+    await c.post('/api/auth/login', { identifier: 'noverify@example.com', password: 'Helping123' });
+    const join = await c.post(`/api/opportunities/${drive.id}/registrations`, {});
+    assert.equal(join.status, 403);
+    assert.equal(join.body.code, 'EMAIL_NOT_VERIFIED');
+    const pledge = await c.post(`/api/campaigns/${drive.id}/pledges`, { amount: 500 });
+    assert.equal(pledge.status, 403);
+  });
+});

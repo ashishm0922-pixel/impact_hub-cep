@@ -1,7 +1,7 @@
 /**
  * HopeConnect AI - My Dashboard (pages/dashboard.html)
  * Shows a different dashboard depending on who is logged in:
- *   volunteer → my drives & hours        donor → my pledges
+ *   volunteer → my drives, hours, tier      donor → my pledges, tier, supported campaigns (both: profile & preferences)
  *   ngo       → organization status, participants (who joined), drives, campaigns, supporters
  */
 
@@ -108,22 +108,61 @@
      ========================================================================== */
   function renderMember(profile) {
     const stats = window.HCStore.getUserStats();
-    const badges = window.HCStore.getUserBadges().filter(b => b.unlocked).length;
+    const badges = window.HCStore.getUserBadges();
+    const unlocked = badges.filter(b => b.unlocked);
     const regs = window.HCStore.getUserRegistrations();
     const pledges = window.HCStore.getUserDonations();
     const isDonor = profile.role === 'donor';
     const today = HC_DATE.todayISO();
 
+    // ---- Tier card (volunteers rise by confirmed hours, donors by pledged ₹) ----
+    const tiers = isDonor ? HC_TIERS.donor : HC_TIERS.volunteer;
+    const value = isDonor ? stats.totalContributed : stats.volunteerHours;
+    const info = HC_TIERS.info(tiers, value);
+    const unit = (n) => (isDonor ? HC.formatINR(n) : `${n} hrs`);
+    const points = isDonor ? Math.floor(stats.totalContributed / 100) : stats.volunteerHours * 10;
+    const tierCard = `
+      <div class="tier-card">
+        <div class="tier-card-head">
+          <div>
+            <span class="tier tier-${info.current.name.toLowerCase()}"><i class="fas fa-medal"></i> ${e(info.current.name)}</span>
+            <span class="form-hint">&nbsp;• Recognition tier</span>
+            <h2>${e(info.current.label)}</h2>
+          </div>
+          <a class="btn btn-sm btn-outline" href="${e(HC.page('rewards.html'))}"><i class="fas fa-trophy"></i> View tier rules</a>
+        </div>
+        ${info.next
+          ? `<div class="tier-progress-label"><span>Progress to <strong>${e(info.next.label)}</strong></span><span>${unit(value)} of ${unit(info.next.min)} (${unit(info.remaining)} to go)</span></div>
+             <div class="progress-track"><div class="progress-bar" style="width: ${info.percent}%;"></div></div>`
+          : '<p><strong>You have reached the highest tier. Thank you!</strong> 🎉</p>'}
+        <div class="tier-badges">
+          <strong>Unlocked badges:</strong>
+          ${unlocked.length
+            ? unlocked.map(b => `<span class="badge-chip" title="${e(b.description)}">${b.icon} ${e(b.title)}</span>`).join('')
+            : `<span class="form-hint">${isDonor ? 'Make your first pledge to earn donor badges!' : 'Attend your first drive to earn your first badge!'}</span>`}
+        </div>
+      </div>`;
+
+    // ---- Stat tiles ----
     const tiles = isDonor
-      ? [statTile('fa-hand-holding-heart', 'green', HC.formatINR(stats.totalContributed), 'Total pledged', 'Demo pledges, not charged'),
-         statTile('fa-bullhorn', 'gold', stats.campaignsSupported, 'Campaigns supported'),
-         statTile('fa-receipt', 'blue', stats.donationCount, 'Pledges made'),
-         statTile('fa-award', 'orange', badges, 'Badges earned')]
+      ? [statTile('fa-hand-holding-heart', 'green', HC.formatINR(stats.totalContributed), 'Total pledged', 'Demo pledges: no money charged'),
+         statTile('fa-bullhorn', 'blue', stats.campaignsSupported, 'Campaigns supported'),
+         statTile('fa-award', 'gold', points, 'Donor impact points', '1 point per ₹100'),
+         statTile('fa-receipt', 'orange', stats.donationCount, 'Pledge receipts')]
       : [statTile('fa-calendar-check', 'blue', stats.eventsUpcoming, 'Upcoming drives'),
          statTile('fa-user-check', 'green', stats.eventsAttended, 'Drives attended'),
-         statTile('fa-clock', 'gold', `${stats.volunteerHours} hrs`, 'Volunteer hours', stats.upcomingHours ? `+${stats.upcomingHours} hrs after upcoming drives` : 'Counted after the NGO confirms attendance'),
-         statTile('fa-award', 'orange', badges, 'Badges earned')];
+         statTile('fa-clock', 'gold', `${stats.volunteerHours} hrs`, 'Confirmed hours', stats.upcomingHours ? `+${stats.upcomingHours} hrs after upcoming drives` : 'Counted after the NGO confirms attendance'),
+         statTile('fa-award', 'orange', points, 'Impact points', '10 points per confirmed hour')];
 
+    // ---- Ledger tables ----
+    const pledgeRows = pledges.map(p => `
+      <tr>
+        <td><strong>${e(p.campaignTitle)}</strong><div class="form-hint">${e(p.ngoName)}</div></td>
+        <td style="white-space: nowrap;">${HC.formatDate(p.date)}</td>
+        <td><strong style="color: var(--accent-green);">${HC.formatINR(p.amount)}</strong></td>
+        <td><span class="demo-tag">${e(p.reference)}</span></td>
+        <td><span class="badge-status-pill pending">Demo pledge</span></td>
+      </tr>`).join('');
     const regRows = regs.map(r => `
       <tr>
         <td><strong>${e(r.opportunityTitle)}</strong><div class="form-hint">${e(r.ngoName)}</div></td>
@@ -134,28 +173,64 @@
           ? `<button type="button" class="btn btn-xs btn-outline" data-cancel="${e(r.id)}">Cancel</button>` : ''}</td>
       </tr>`).join('');
 
-    const pledgeRows = pledges.map(p => `
-      <tr>
-        <td><strong>${e(p.campaignTitle)}</strong><div class="form-hint">${e(p.ngoName)}</div></td>
-        <td style="white-space: nowrap;">${HC.formatDate(p.date)}</td>
-        <td><strong style="color: var(--accent-green);">${HC.formatINR(p.amount)}</strong></td>
-        <td><span class="demo-tag">${e(p.reference)}</span></td>
-      </tr>`).join('');
-
+    const pledgesTable = tableCard('My donation ledger & pledge receipts', 'fa-receipt', ['Campaign supported', 'Date', 'Amount', 'Receipt reference', 'Status'], pledgeRows,
+      `No pledges yet. <a href="${e(HC.page('campaigns.html'))}">Explore verified causes</a> to make your first one.`,
+      `<a href="${e(HC.page('campaigns.html'))}" class="btn btn-sm btn-green"><i class="fas fa-heart"></i> Support a campaign</a>`);
     const drivesTable = tableCard('My volunteer drives', 'fa-hands-helping', ['Drive', 'Date', 'Hours', 'Status', ''], regRows,
       `No drives yet. <a href="${e(HC.page('volunteer.html'))}">Find a drive to join</a>.`,
-      `<a href="${e(HC.page('volunteer.html'))}" class="btn btn-sm btn-outline">Find drives</a>`);
-    const pledgesTable = tableCard('My pledges', 'fa-receipt', ['Campaign', 'Date', 'Amount', 'Reference'], pledgeRows,
-      `No pledges yet. <a href="${e(HC.page('campaigns.html'))}">Support a campaign</a>.`,
-      `<a href="${e(HC.page('campaigns.html'))}" class="btn btn-sm btn-outline">Browse campaigns</a>`);
+      `<a href="${e(HC.page('volunteer.html'))}" class="btn btn-sm btn-primary"><i class="fas fa-search"></i> Find drives</a>`);
 
-    document.getElementById('dashContent').innerHTML = `
+    // ---- Live progress of the campaigns I supported ----
+    const supportedIds = [...new Set(pledges.map(p => p.campaignId))];
+    const supported = supportedIds.map(id => window.HCStore.getCampaignById(id)).filter(Boolean);
+    const progressCards = supported.map(c => {
+      const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
+      return `
+        <div class="mini-campaign">
+          <strong>${e(c.title)}</strong>
+          <div class="form-hint">${e(c.ngoName)}</div>
+          <div class="progress-track"><div class="progress-bar" style="width: ${pct}%;"></div></div>
+          <div class="mini-campaign-foot"><span>${HC.formatINR(c.raised)} of ${HC.formatINR(c.goal)}</span><strong>${pct}%</strong></div>
+        </div>`;
+    }).join('');
+    const liveProgress = isDonor ? `
+      <h2 class="dash-section-title">Live progress of supported campaigns</h2>
+      ${progressCards ? `<div class="mini-campaign-grid">${progressCards}</div>` : '<p class="form-hint">Campaigns you support will show their live progress here.</p>'}` : '';
+
+    // ---- Profile & preferences ----
+    const profileForm = `
+      <div class="admin-card dash-profile-card">
+        <h2>${isDonor ? 'Donor' : 'Volunteer'} profile &amp; preferences</h2>
+        <form id="profileForm" novalidate>
+          <div class="form-row-2">
+            <div class="form-group"><label for="profName">Full name *</label><input type="text" class="form-control" id="profName" maxlength="60" value="${e(profile.name)}"></div>
+            <div class="form-group"><label for="profCity">City</label><input type="text" class="form-control" id="profCity" maxlength="60" value="${e(profile.city)}" placeholder="e.g. Pune"></div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group"><label for="profPhone">Mobile number</label><input type="text" class="form-control" id="profPhone" value="+91 ${e(profile.phone)}" readonly></div>
+            <div class="form-group"><label for="profEmail">Email</label><input type="text" class="form-control" id="profEmail" value="${e(profile.email)}" readonly></div>
+          </div>
+          <label class="check-row">
+            <input type="checkbox" id="profAnonymous" ${profile.anonymous ? 'checked' : ''}>
+            <span><strong>Show me as "Anonymous" on public leaderboards</strong><br><span class="form-hint">Your name and city are hidden on the Rewards page. NGOs you support still see your details.</span></span>
+          </label>
+          <p class="form-hint">Email and mobile number are your login details and can't be changed here.</p>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save preferences</button>
+        </form>
+      </div>`;
+
+    const content = document.getElementById('dashContent');
+    content.innerHTML = `
       ${profile.emailVerified ? '' : '<div class="demo-callout warning"><i class="fas fa-envelope"></i> Verify your email to join drives and support campaigns. Use <strong>Resend email</strong> in the banner above if you need a new link.</div>'}
       <div class="stats-overview-grid">${tiles.join('')}</div>
-      ${isDonor ? pledgesTable + drivesTable : drivesTable + pledgesTable}
-      <p class="form-hint" style="text-align: center;"><a href="${e(HC.page('impact.html'))}"><i class="fas fa-chart-line"></i> See your badges, charts and certificate on the Impact page</a></p>`;
+      ${tierCard}
+      ${isDonor ? pledgesTable : drivesTable}
+      ${liveProgress}
+      ${isDonor ? drivesTable : pledgesTable}
+      ${profileForm}
+      <p class="form-hint" style="text-align: center;"><a href="${e(HC.page('impact.html'))}"><i class="fas fa-chart-line"></i> See your charts and certificate on the Impact page</a></p>`;
 
-    document.getElementById('dashContent').querySelectorAll('[data-cancel]').forEach(btn => {
+    content.querySelectorAll('[data-cancel]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Cancel your registration for this drive?')) return;
         HC.setLoading(btn, true, '...');
@@ -168,6 +243,33 @@
         window.showToast('Registration cancelled.', 'info', 'fas fa-calendar-times');
         renderMember(window.HCStore.getProfile());
       });
+    });
+    setupProfileForm();
+  }
+
+  function setupProfileForm() {
+    const form = document.getElementById('profileForm');
+    const submit = form.querySelector('button[type="submit"]');
+    const name = document.getElementById('profName');
+    const city = document.getElementById('profCity');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      if (submit.disabled) return;
+      const valid = HC.validateFields([
+        { input: name, checks: [HC.validators.name] },
+        { input: city, checks: [v => (!v || /^[\p{L}][\p{L} .,'-]{0,59}$/u.test(v) ? '' : 'City can only contain letters, spaces and basic punctuation.')] }
+      ]);
+      if (!valid) return;
+      HC.setLoading(submit, true, 'Saving...');
+      const result = await window.HCStore.updateProfile({ name: name.value.trim(), city: city.value.trim(), anonymous: document.getElementById('profAnonymous').checked });
+      HC.setLoading(submit, false);
+      if (!result.success) {
+        if (!HC.showServerErrors({ name, city }, result)) window.showToast(result.error, 'error', 'fas fa-exclamation-circle');
+        return;
+      }
+      window.showToast(result.message, 'success', 'fas fa-check');
+      await refreshCurrentUser(); // header + profile card show the new name
+      render();
     });
   }
 

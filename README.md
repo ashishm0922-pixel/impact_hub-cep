@@ -23,7 +23,8 @@ hopeconnect-ai/
 │   │   ├── campaigns.html     ← campaigns + demo donations
 │   │   ├── ngos.html          ← NGO directory + profiles
 │   │   ├── impact.html        ← your hours, donations, badges, certificate
-│   │   ├── dashboard.html     ← organizer portal
+│   │   ├── dashboard.html     ← My Dashboard (volunteer / donor / NGO versions)
+│   │   ├── rewards.html       ← public leaderboards, tiers and badges
 │   │   ├── admin.html         ← admin panel: users, verification status, suspend
 │   │   ├── verify-email.html  ← opened from the link in the verification email
 │   │   ├── about.html
@@ -57,7 +58,7 @@ hopeconnect-ai/
 │   │   ├── modules/           ← one folder per feature: auth/ admin/ ngos/ opportunities/ ...
 │   │   ├── shared/ utils/     ← validation rules, password hashing, tokens
 │   │   └── scripts/           ← create-admin, seed, dev-local
-│   ├── tests/                 ← 57 auth/API tests (in-memory MongoDB)
+│   ├── tests/                 ← 80 auth/API tests (in-memory MongoDB)
 │   └── .env.example           ← copy to .env (MongoDB Atlas URI, admin login)
 │
 ├── docs/
@@ -107,6 +108,17 @@ npm test
 5. The **admin panel** (`/pages/admin.html`) shows every user and whether they're verified, and can suspend accounts.
    Set `REQUIRE_ADMIN_APPROVAL=true` in `backend/.env` if admins should also approve every new account.
 
+## Who sees what
+| Role | After logging in (click your name → My Dashboard) |
+|---|---|
+| **Volunteer** | upcoming and attended drives, confirmed hours, tier progress (Bronze → Platinum by hours), badges, profile & preferences |
+| **Donor** | pledge ledger with receipt references, tier progress (by ₹ pledged), live progress of supported campaigns, profile & preferences (incl. "show me as Anonymous") |
+| **NGO** | register the organization (admin verifies it), then publish drives/campaigns, **see everyone who joined** (name, email, phone, skills), mark attendance, see supporters, download participants as CSV |
+| **Admin** (`/pages/admin.html`) | overview, NGO verification queue, users, audit logs (+CSV), leaderboard, flagged content |
+| **Visitor** | can browse everything, but **must log in to join a drive, donate, or create anything** |
+
+Public **Rewards** page (`pages/rewards.html`): Top Volunteers, Top Donors (names shown as "Firstname L.", anonymous users hidden) and the badge/tier rules.
+
 ## Try the main journeys
 1. **Volunteer:** Volunteer → search "pune tree" → *Join Opportunity* → invalid name/email/phone is rejected → registered.
 2. **Organizer:** Organizer Portal → *New Drive* (date = today) → join it on the Volunteer page → mark **Attended** in the portal → hours appear on **Impact**.
@@ -119,9 +131,9 @@ Use **Reset demo data** in any page footer to start over.
 ## What is simulated vs real
 | Feature | Status |
 |---|---|
-| Search, filters, registration, organizer tools | ✅ Working, but data is still in browser storage (demo) |
+| Drives, campaigns, sign-ups, NGO tools, leaderboards, admin panel | ✅ Real (stored in MongoDB) |
 | Recommendations | ✅ Transparent rule-based scoring (not machine learning) |
-| Donations | ⚠️ Demo only: no payment provider, no money moves |
+| Donations | ⚠️ Demo pledges only: saved on the server, but no payment provider is connected and no money moves |
 | Sign-up / login / email verification / admin panel | ✅ Real (MongoDB, hashed passwords, secure sessions; emails need SMTP settings) |
 | Contact form | ⚠️ Saved in browser; no email is sent |
 | NGO verification | ⚠️ New NGOs stay "Pending"; no admin review yet |

@@ -6,10 +6,12 @@
 - [x] Email verification on sign-up (one-time link) + optional admin approval
 - [ ] Connect a real email service (Gmail SMTP / Brevo / Resend)
 - [ ] Forgot password / change password (uses the same email service)
-- [ ] Switch `frontend/assets/js/core/store.js` from localStorage to the API, one feature at a time (start with volunteer registration)
-- [ ] Organizer API: create/close campaigns and drives, mark attendance
-- [ ] Admin panel: also verify or reject NGOs (check registration + 80G/12A documents)
-- [ ] Organizer portal only for approved NGO accounts
+- [x] Drives, campaigns, sign-ups and pledges live in MongoDB (`store.js` talks to the API)
+- [x] NGO console: publish drives/campaigns, see participants, mark attendance
+- [x] Admin panel: NGO verification queue, users, audit logs, leaderboard, flagged content
+- [ ] NGO document uploads (registration certificate, 80G/12A) for the verification queue
+- [x] NGO tools only for verified NGO accounts
+- [ ] Upgrade `zod` to v4 (npm audit advisory; low risk today because request bodies are capped at 20 KB)
 
 ## Phase 2: Money & trust
 - [ ] Razorpay donations: server creates the order, webhook confirms → `SUCCEEDED`

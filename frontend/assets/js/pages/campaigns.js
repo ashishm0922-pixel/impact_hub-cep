@@ -92,11 +92,11 @@
             <div>
               <div class="funding-numbers">
                 <div>
-                  <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Raised (demo figures)</span>
+                  <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Raised so far</span>
                   <strong>${formatINR(c.raised)}</strong>
                 </div>
                 <div style="text-align: right;">
-                  <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Goal</span>
+                  <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Target goal</span>
                   <span style="font-weight: 600; color: var(--text-muted);">${formatINR(c.goal)}</span>
                 </div>
               </div>
@@ -111,9 +111,14 @@
               </div>
 
               ${open
-                ? `<button class="btn btn-green" style="width: 100%;" data-donate="${e(c.id)}"><i class="fas fa-heart"></i> Support This Cause</button>
-                   <button type="button" class="report-link" data-report="campaign" data-id="${e(c.id)}" data-name="${e(c.title)}"><i class="fas fa-flag"></i> Report</button>`
-                : `<button class="btn btn-secondary" style="width: 100%;" disabled><i class="fas fa-lock"></i> No longer accepting support</button>`}
+                ? `<div class="card-actions">
+                   <button type="button" class="btn btn-outline" data-details="${e(c.id)}"><i class="fas fa-info-circle"></i> Details</button>
+                   <button type="button" class="btn btn-green" data-donate="${e(c.id)}"><i class="fas fa-heart"></i> Donate Now</button>
+                 </div>`
+              : `<div class="card-actions">
+                   <button type="button" class="btn btn-outline" data-details="${e(c.id)}"><i class="fas fa-info-circle"></i> Details</button>
+                   <button type="button" class="btn btn-secondary" disabled><i class="fas fa-lock"></i> Closed</button>
+                 </div>`}
             </div>
           </div>
         </div>
@@ -147,8 +152,10 @@
     });
 
     document.getElementById('campaignsGrid').addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-donate]');
-      if (btn) openDonationModal(btn.dataset.donate);
+      const donate = e.target.closest('[data-donate]');
+      if (donate) return openDonationModal(donate.dataset.donate);
+      const details = e.target.closest('[data-details]');
+      if (details) openDetails(details.dataset.details);
     });
   }
 
@@ -209,7 +216,42 @@
     return '';
   }
 
+  /* ---------------- Details popup ---------------- */
+  function openDetails(campaignId) {
+    const c = window.HCStore.getCampaignById(campaignId);
+    if (!c) return;
+    const { escape: e, formatINR, safeUrl } = window.HC;
+    const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
+    const open = window.HCStore.isCampaignOpen(c);
+    const days = window.HCStore.getDaysLeft(c);
+    document.getElementById('detailsBody').innerHTML = `
+      <img class="details-img" src="${safeUrl(c.image)}" alt="" loading="lazy">
+      <div class="details-text">
+        <div class="form-hint"><i class="fas fa-building"></i> <strong>${e(c.ngoName)}</strong> • ${e(c.category)} • <i class="fas fa-map-marker-alt"></i> ${e(c.location)}</div>
+        <h3>${e(c.title)}</h3>
+        <p>${e(c.description)}</p>
+        <div class="funding-numbers">
+          <div><span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Raised so far</span><strong>${formatINR(c.raised)}</strong></div>
+          <div style="text-align: right;"><span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Target goal</span><span style="font-weight: 600;">${formatINR(c.goal)}</span></div>
+        </div>
+        <div class="progress-track"><div class="progress-bar" style="width: ${pct}%;"></div></div>
+        <div class="details-meta"><span><i class="fas fa-heart" style="color: var(--accent-orange);"></i> <strong>${e(c.supporters)}</strong> supporters</span><span>${pct}% funded</span><span><i class="fas fa-clock"></i> ${open ? `<strong>${days}</strong> days left` : '<strong>Closed</strong>'}</span></div>
+        <p class="form-hint">Pledges on this site are demo pledges: no money is charged yet.</p>
+      </div>`;
+    const donate = document.getElementById('detailsDonate');
+    donate.hidden = !open;
+    donate.dataset.donate = c.id;
+    const report = document.getElementById('detailsReport');
+    report.dataset.id = c.id;
+    report.dataset.name = c.title;
+    window.openModal('detailsModal');
+  }
+
   function setupDonationFlow() {
+    document.getElementById('detailsDonate').addEventListener('click', (ev) => {
+      window.closeModal('detailsModal');
+      openDonationModal(ev.currentTarget.dataset.donate);
+    });
     const form = document.getElementById('donationForm');
     const customInput = document.getElementById('customDonAmount');
     document.querySelectorAll('.don-tier-btn').forEach(btn => {

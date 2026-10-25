@@ -224,7 +224,7 @@
 }
 
 /* v2: the nav has 7 links + actions, so switch to the hamburger menu earlier */
-@media (max-width: 1180px) and (min-width: 769px) {
+@media (max-width: 1320px) and (min-width: 769px) {
   .mobile-menu-btn {
     display: block;
   }
@@ -457,4 +457,34 @@
   .portal-top-bar .btn {
     flex: 1 1 auto;
   }
+}
+
+/* v11: dashboards, tabs, admin and rewards on smaller screens */
+@media (max-width: 1100px) {
+  .audit-filters { grid-template-columns: 1fr 1fr; }
+  .admin-overview-grid, .admin-shortcuts { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .tier-grid { grid-template-columns: 1fr; }
+  .rewards-hero h1 { font-size: 1.8rem; }
+  .dash-name { font-size: 1.2rem; }
+  .dash-profile { padding: 1rem; }
+}
+
+@media (max-width: 600px) {
+  .admin-overview-grid, .admin-shortcuts, .audit-filters { grid-template-columns: 1fr; }
+  .tier-rules .form-hint { margin-left: 0; width: 100%; }
+  .card-actions { grid-template-columns: 1fr; }
+  .admin-card { padding: 1rem; }
+  .dash-tab { padding: 0.75rem 0.85rem; font-size: 0.85rem; }
+}
+
+/* v13: 8 menu links + account chip: tighter spacing on laptop screens so nothing touches or wraps */
+@media (min-width: 1321px) and (max-width: 1560px) {
+  .nav-links { gap: 1rem; }
+  .nav-links a { font-size: 0.86rem; }
+  .brand-logo { font-size: 1.2rem; }
+  .nav-actions { gap: 0.5rem; }
+  .auth-chip { font-size: 0.82rem; }
 }

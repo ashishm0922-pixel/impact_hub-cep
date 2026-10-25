@@ -14,6 +14,8 @@ export function publicUser(user: UserDocument) {
     phone: user.phone,
     role: user.role,
     status: user.status,
+    city: user.city || '',
+    anonymous: Boolean(user.anonymous),
     emailVerified: user.emailVerified,
     createdAt: user.createdAt
   };

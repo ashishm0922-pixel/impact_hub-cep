@@ -4,7 +4,7 @@ import { OpportunityModel, RegistrationModel } from '../../models/opportunity.mo
 import { UserModel } from '../../models/user.model';
 import { COUNTED_DONATION } from '../catalog/catalog.service';
 
-/** Points → badge tier (same tiers for everyone) */
+/** NGOs: points → tier */
 export function badgeTier(points: number) {
   if (points >= 1000) return 'Platinum';
   if (points >= 500) return 'Gold';
@@ -12,12 +12,35 @@ export function badgeTier(points: number) {
   return 'Bronze';
 }
 
+/** Volunteers: confirmed (attended) hours → tier. Same thresholds as the website's Rewards page. */
+export function volunteerTier(hours: number) {
+  if (hours >= 70) return 'Platinum';
+  if (hours >= 35) return 'Gold';
+  if (hours >= 15) return 'Silver';
+  return 'Bronze';
+}
+
+/** Donors: total pledged/donated rupees → tier */
+export function donorTier(amount: number) {
+  if (amount >= 50000) return 'Platinum';
+  if (amount >= 10000) return 'Gold';
+  if (amount >= 2500) return 'Silver';
+  return 'Bronze';
+}
+
+/** "Neha Kulkarni" → "Neha K." (public pages never show full names, emails or phones) */
+export function publicName(name: string, anonymous: boolean | null | undefined, who: string) {
+  if (anonymous) return `Anonymous ${who}`;
+  const [first, ...rest] = name.trim().split(/\s+/);
+  return rest.length ? `${first} ${rest[rest.length - 1][0].toUpperCase()}.` : first;
+}
+
 const key = (id: unknown) => String(id);
 
 /** Volunteers: 10 points per attended hour. Only ATTENDED (organizer-confirmed) hours count. */
 export async function volunteerLeaderboard(limit = 50) {
   const [users, hours] = await Promise.all([
-    UserModel.find({ role: 'volunteer', status: 'approved' }).select('name email createdAt').lean(),
+    UserModel.find({ role: 'volunteer', status: 'approved' }).select('name email city anonymous createdAt').lean(),
     RegistrationModel.aggregate<{ _id: unknown; hours: number; events: number }>([
       { $match: { status: 'attended', user: { $ne: null } } },
       { $group: { _id: '$user', hours: { $sum: '$hours' }, events: { $sum: 1 } } }
@@ -28,7 +51,7 @@ export async function volunteerLeaderboard(limit = 50) {
     .map(u => {
       const h = byUser.get(key(u._id));
       const points = (h?.hours || 0) * 10;
-      return { id: key(u._id), name: u.name, email: u.email, hours: h?.hours || 0, events: h?.events || 0, points, tier: badgeTier(points), joined: u.createdAt };
+      return { id: key(u._id), name: u.name, email: u.email, city: u.city || '', anonymous: Boolean(u.anonymous), hours: h?.hours || 0, events: h?.events || 0, points, tier: volunteerTier(h?.hours || 0), joined: u.createdAt };
     })
     .sort((a, b) => b.points - a.points || +new Date(a.joined!) - +new Date(b.joined!))
     .slice(0, limit)
@@ -43,7 +66,7 @@ export async function donorLeaderboard(limit = 50) {
     { $sort: { paise: -1 } },
     { $limit: limit }
   ]);
-  const users = await UserModel.find({ _id: { $in: rows.map(r => r._id) } }).select('name email').lean();
+  const users = await UserModel.find({ _id: { $in: rows.map(r => r._id) } }).select('name email city anonymous').lean();
   const byId = new Map(users.map(u => [key(u._id), u]));
   return rows.map((r, i) => {
     const amount = Math.round(r.paise / 100);
@@ -53,11 +76,13 @@ export async function donorLeaderboard(limit = 50) {
       id: key(r._id),
       name: byId.get(key(r._id))?.name || 'Deleted user',
       email: byId.get(key(r._id))?.email || '',
+      city: byId.get(key(r._id))?.city || '',
+      anonymous: Boolean(byId.get(key(r._id))?.anonymous),
       amount,
       pledges: r.count,
       campaignsSupported: r.campaigns.length,
       points,
-      tier: badgeTier(points)
+      tier: donorTier(amount)
     };
   });
 }

@@ -102,8 +102,8 @@ class StoreManager {
   /* ---------------- Profile ---------------- */
   getProfile() {
     if (!this.user) return { name: '', email: '', phone: '', role: 'guest', isDemo: true };
-    const { name, email, phone, role, emailVerified } = this.user;
-    return { name, email, phone, role, emailVerified, isDemo: false };
+    const { name, email, phone, role, emailVerified, city, anonymous } = this.user;
+    return { name, email, phone, role, emailVerified, city: city || '', anonymous: Boolean(anonymous), isDemo: false };
   }
 
   isLoggedIn() {
@@ -176,6 +176,20 @@ class StoreManager {
   async reportContent(targetType, targetId, reason, details) {
     const res = await HC.api('POST', '/api/reports', { targetType, targetId, reason, details });
     return res.ok ? { success: true, message: res.data.message } : failure(res);
+  }
+
+  /** Public leaderboard (first name + initial only): type = 'volunteers' | 'donors' */
+  async getLeaderboard(type) {
+    const res = await HC.api('GET', `/api/leaderboard?type=${encodeURIComponent(type)}`);
+    return res.ok ? { success: true, rows: res.data.rows } : failure(res);
+  }
+
+  /** Save name / city / "anonymous on leaderboards" for the logged-in user */
+  async updateProfile(data) {
+    const res = await HC.api('PATCH', '/api/me/profile', data);
+    if (!res.ok) return failure(res);
+    this.user = res.data.user;
+    return { success: true, user: res.data.user, message: res.data.message };
   }
 
   async saveContactMessage(message) {
@@ -293,3 +307,4 @@ class StoreManager {
 window.HCStore = new StoreManager();
 window.HC_CATEGORIES = CATEGORIES;
 window.HC_DATE = { todayISO, isoDaysFromToday, daysBetween };
+window.HC_TIERS = { volunteer: VOLUNTEER_TIERS, donor: DONOR_TIERS, info: tierInfo };

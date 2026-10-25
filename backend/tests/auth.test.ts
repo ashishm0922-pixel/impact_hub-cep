@@ -170,7 +170,7 @@ describe('user login', () => {
 
     const me = await c.get('/api/auth/me');
     assert.equal(me.status, 200);
-    assert.deepEqual(Object.keys(me.body.user).sort(), ['createdAt', 'email', 'emailVerified', 'id', 'name', 'phone', 'role', 'status']);
+    assert.deepEqual(Object.keys(me.body.user).sort(), ['anonymous', 'city', 'createdAt', 'email', 'emailVerified', 'id', 'name', 'phone', 'role', 'status']);
 
     // The token is stored hashed in the DB, never as-is
     const token = c.cookies.get('hc_session')!;

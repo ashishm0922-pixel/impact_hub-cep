@@ -22,6 +22,9 @@ const userSchema = new Schema(
     role: { type: String, enum: USER_ROLES, default: 'volunteer' },
     status: { type: String, enum: USER_STATUSES, default: 'pending', index: true },
     // Becomes true when the user clicks the link in the verification email
+    city: { type: String, trim: true, maxlength: 60 },
+    // true → shown as "Anonymous" on public leaderboards
+    anonymous: { type: Boolean, default: false },
     emailVerified: { type: Boolean, default: false },
     emailVerifiedAt: { type: Date },
     statusReason: { type: String, maxlength: 200 },

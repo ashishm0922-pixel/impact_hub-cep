@@ -1,84 +1,94 @@
 /**
  * HopeConnect AI - Admin panel (pages/admin.html)
- * Admin login (username + password) and approving / rejecting / suspending user accounts.
- * The admin session is an httpOnly cookie that only the /api/admin/* routes receive.
+ * Tabs: Overview • Verification Queue (NGOs) • Users • Audit Logs • Leaderboard • Flagged Content
+ * The admin session is an httpOnly cookie that only /api/admin/* routes receive.
  */
 
 // Private scope: lets this script run again on every visit (no-reload navigation)
 (() => {
-  const adminState = {
-    status: null, // set on first load: "pending" if admin approval is on, otherwise all users
-    search: '',
-    page: 1,
-    totalPages: 1,
-    pendingAction: null // { userId, status, name } while the reason modal is open
+  const e = (v) => HC.escape(v);
+  const state = {
+    tab: 'overview',
+    ngos: { status: 'pending', search: '' },
+    users: { status: '', search: '', page: 1 },
+    audit: { search: '', action: '', from: '', to: '', page: 1 },
+    board: 'volunteers',
+    reports: 'open',
+    pendingAction: null // what the reason/password modal will do
   };
+  const ROLE_LABEL = { volunteer: 'Volunteer', donor: 'Donor', ngo: 'NGO' };
 
   HC.ready(async () => {
-    setupAdminLogin();
-    setupAdminPanel();
-
+    setupLogin();
+    setupTabs();
+    setupReasonModal();
     const { ok, data } = await HC.api('GET', '/api/admin/auth/me');
     document.getElementById('adminLoading').hidden = true;
-    if (ok) showAdminPanel(data.admin);
-    else if (data.code === 'NETWORK_ERROR' || data.code === 'DB_UNAVAILABLE') showAdminLogin(data.error);
-    else showAdminLogin();
+    if (ok) showPanel(data.admin);
+    else showLogin(['NETWORK_ERROR', 'DB_UNAVAILABLE'].includes(data.code) ? data.error : '');
   });
 
-  /* ---------------- Views ---------------- */
-  function showAdminLogin(message = '') {
+  /* ==========================================================================
+     Login / logout / session
+     ========================================================================== */
+  function showLogin(message = '') {
     document.getElementById('adminPanelView').hidden = true;
     document.getElementById('adminLoginView').hidden = false;
     document.getElementById('adminChip').hidden = true;
     document.getElementById('adminLogoutBtn').hidden = true;
-    setAdminAlert(message);
+    setLoginAlert(message);
     document.getElementById('adminUsername').focus();
   }
 
-  function showAdminPanel(admin) {
+  function showPanel(admin) {
     document.getElementById('adminLoginView').hidden = true;
     document.getElementById('adminPanelView').hidden = false;
     document.getElementById('adminName').textContent = admin.username;
+    document.getElementById('adminDisplayName').textContent = admin.username;
     document.getElementById('adminChip').hidden = false;
     document.getElementById('adminLogoutBtn').hidden = false;
-    loadUsers();
+    loadTab();
   }
 
-  function setAdminAlert(message, type = 'error') {
+  function setLoginAlert(message, type = 'error') {
     const box = document.getElementById('adminLoginAlert');
     box.className = `form-alert ${type}`;
     box.textContent = message;
     box.hidden = !message;
   }
 
-  /** Any 401 while using the panel means the admin session ended → back to login. */
-  function handleSessionLoss(status) {
+  /** Any 401 means the admin session ended → back to login. */
+  function sessionLost(status) {
     if (status === 401) {
-      showAdminLogin('Your admin session has ended. Please log in again.');
+      showLogin('Your admin session has ended. Please log in again.');
       return true;
     }
     return false;
   }
 
-  /* ---------------- Login / logout ---------------- */
-  function setupAdminLogin() {
+  async function api(method, path, body) {
+    const res = await HC.api(method, path, body);
+    if (sessionLost(res.status)) return null;
+    return res;
+  }
+
+  function setupLogin() {
     const form = document.getElementById('adminLoginForm');
     const username = document.getElementById('adminUsername');
     const password = document.getElementById('adminPassword');
     const submit = form.querySelector('button[type="submit"]');
 
-    document.getElementById('adminPasswordToggle').addEventListener('click', (e) => {
+    document.getElementById('adminPasswordToggle').addEventListener('click', (ev) => {
       const show = password.type === 'password';
       password.type = show ? 'text' : 'password';
-      e.currentTarget.innerHTML = `<i class="fas fa-eye${show ? '-slash' : ''}"></i>`;
-      e.currentTarget.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      ev.currentTarget.innerHTML = `<i class="fas fa-eye${show ? '-slash' : ''}"></i>`;
+      ev.currentTarget.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     });
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
       if (submit.disabled) return;
-      setAdminAlert('');
-
+      setLoginAlert('');
       const valid = HC.validateFields([
         { input: username, checks: [v => (v ? '' : 'Enter your username.')] },
         { input: password, raw: true, checks: [v => (v ? '' : 'Enter your password.')] }
@@ -86,198 +96,479 @@
       if (!valid) return;
 
       HC.setLoading(submit, true, 'Logging in...');
-      const { ok, data } = await HC.api('POST', '/api/admin/auth/login', {
-        username: username.value.trim(),
-        password: password.value
-      });
+      const { ok, data } = await HC.api('POST', '/api/admin/auth/login', { username: username.value.trim(), password: password.value });
       HC.setLoading(submit, false);
-
       password.value = '';
       if (!ok) {
-        setAdminAlert(data.error || 'Login failed.');
+        setLoginAlert(data.error || 'Login failed.');
         password.focus();
         return;
       }
       form.reset();
-      showAdminPanel(data.admin);
+      showPanel(data.admin);
     });
 
     document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
       await HC.api('POST', '/api/admin/auth/logout');
-      showAdminLogin();
+      showLogin();
       window.showToast('Logged out of the admin panel.', 'info', 'fas fa-sign-out-alt');
     });
   }
 
-  /* ---------------- User list ---------------- */
-  function setupAdminPanel() {
-    document.getElementById('adminStatusTabs').addEventListener('click', (e) => {
-      const tab = e.target.closest('[data-status]');
-      if (!tab) return;
-      document.querySelectorAll('.admin-status-tab').forEach(t => t.classList.toggle('active', t === tab));
-      adminState.status = tab.dataset.status;
-      adminState.page = 1;
-      loadUsers();
-    });
-
-    let searchTimer;
-    document.getElementById('adminSearch').addEventListener('input', (e) => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        adminState.search = e.target.value.trim();
-        adminState.page = 1;
-        loadUsers();
-      }, 300);
-    });
-
-    document.getElementById('adminRefreshBtn').addEventListener('click', loadUsers);
-    document.getElementById('adminPrevPage').addEventListener('click', () => changePage(-1));
-    document.getElementById('adminNextPage').addEventListener('click', () => changePage(1));
-
-    document.getElementById('adminUsersBody').addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const { action, id, name } = btn.dataset;
-      if (action === 'approved') updateStatus(id, 'approved', undefined, btn);
-      else openReasonModal(id, action, name);
-    });
-
-    setupReasonModal();
+  /* ==========================================================================
+     Tabs
+     ========================================================================== */
+  function setupTabs() {
+    document.querySelectorAll('[data-admin-tab]').forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.adminTab)));
+    // One click handler for every button inside the tab area
+    document.getElementById('adminTabContent').addEventListener('click', handleAction);
   }
 
-  function changePage(delta) {
-    const next = adminState.page + delta;
-    if (next < 1 || next > adminState.totalPages) return;
-    adminState.page = next;
-    loadUsers();
+  function switchTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll('[data-admin-tab]').forEach(t => t.classList.toggle('active', t.dataset.adminTab === tab));
+    loadTab();
   }
 
+  function loading() {
+    document.getElementById('adminTabContent').innerHTML = '<div class="dash-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  }
+
+  function loadTab() {
+    loading();
+    ({ overview: loadOverview, ngos: loadNgos, users: loadUsers, audit: loadAudit, leaderboard: loadLeaderboard, reports: loadReports })[state.tab]();
+  }
+
+  function setBadge(name, count) {
+    const badge = document.querySelector(`[data-count-badge="${name}"]`);
+    if (badge) badge.textContent = count ? String(count) : '';
+  }
+
+  function tile(icon, color, value, label, sub = '') {
+    return `
+      <div class="stat-metric-card">
+        <div class="stat-icon-square" style="background: var(--accent-${color}-light); color: var(--accent-${color});"><i class="fas ${icon}"></i></div>
+        <div><div class="stat-number">${e(value)}</div><div class="stat-label">${e(label)}</div>${sub ? `<div class="form-hint">${sub}</div>` : ''}</div>
+      </div>`;
+  }
+
+  function table(headers, rows, empty) {
+    return `
+      <div class="data-table-container"><div class="table-scroll"><table class="custom-table">
+        <thead><tr>${headers.map(h => `<th>${e(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rows || `<tr><td colspan="${headers.length}" style="text-align: center; color: var(--text-muted);">${empty}</td></tr>`}</tbody>
+      </table></div></div>`;
+  }
+
+  function filterChips(attr, current, options) {
+    return `<div class="filter-chips">${options.map(([value, label]) =>
+      `<button type="button" class="filter-chip ${current === value ? 'active' : ''}" ${attr}="${e(value)}">${e(label)}</button>`).join('')}</div>`;
+  }
+
+  function showError(message) {
+    document.getElementById('adminTabContent').innerHTML = `<div class="dash-empty"><h2>Could not load this section</h2><p>${e(message || 'Please try again.')}</p></div>`;
+  }
+
+  /* ---------------- Overview ---------------- */
+  async function loadOverview() {
+    const res = await api('GET', '/api/admin/overview');
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const d = res.data;
+    setBadge('ngos', d.ngos.pending);
+    setBadge('reports', d.reports.open);
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="stats-overview-grid admin-overview-grid">
+        ${tile('fa-users', 'blue', d.users.total, 'Registered users', `${d.users.volunteers} volunteers • ${d.users.donors} donors • ${d.users.ngos} NGOs`)}
+        ${tile('fa-building', 'green', d.ngos.total, 'Non-profit partners', `<strong style="color: var(--accent-green);">${d.ngos.verified} verified</strong> • <strong style="color: var(--accent-orange);">${d.ngos.pending} pending</strong>`)}
+        ${tile('fa-hand-holding-heart', 'green', HC.formatINR(d.donations.pledgedAmount), 'Pledged (demo)', `${d.donations.pledgedCount} pledges • ${HC.formatINR(d.donations.paidAmount)} real payments`)}
+        ${tile('fa-hands-helping', 'gold', `${d.volunteering.hours} hrs`, 'Verified volunteer hours', `${d.volunteering.activeVolunteers} volunteers with attended drives`)}
+        ${tile('fa-bullhorn', 'orange', d.live.campaigns + d.live.drives, 'Live campaigns & drives', `${d.live.campaigns} campaigns • ${d.live.drives} drives`)}
+        ${tile('fa-shield-alt', 'blue', d.audit.events, 'Audit events', `${d.reports.open} open content reports`)}
+      </div>
+      <div class="admin-shortcuts">
+        <div class="admin-shortcut"><h3><i class="fas fa-clipboard-check" style="color: var(--accent-orange);"></i> Verification action required</h3>
+          <p>${d.ngos.pending} NGO${d.ngos.pending === 1 ? '' : 's'} waiting for review.</p>
+          <button type="button" class="btn btn-green btn-sm" data-goto="ngos"><i class="fas fa-arrow-right"></i> Open verification queue</button></div>
+        <div class="admin-shortcut"><h3><i class="fas fa-history" style="color: var(--accent-blue);"></i> System activity & audit trail</h3>
+          <p>Logins, sign-ups, verifications and admin actions.</p>
+          <button type="button" class="btn btn-outline btn-sm" data-goto="audit"><i class="fas fa-search"></i> Inspect audit logs</button></div>
+        <div class="admin-shortcut"><h3><i class="fas fa-trophy" style="color: var(--accent-gold-hover);"></i> Impact leaderboard</h3>
+          <p>Top volunteers, donors and NGOs.</p>
+          <button type="button" class="btn btn-outline btn-sm" data-goto="leaderboard"><i class="fas fa-medal"></i> View leaderboard</button></div>
+      </div>`;
+  }
+
+  /* ---------------- NGO verification queue ---------------- */
+  async function loadNgos() {
+    const params = new URLSearchParams();
+    if (state.ngos.status) params.set('status', state.ngos.status);
+    if (state.ngos.search) params.set('search', state.ngos.search);
+    const res = await api('GET', `/api/admin/ngos?${params}`);
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const { ngos, counts } = res.data;
+    setBadge('ngos', counts.pending);
+
+    const rows = ngos.map(n => `
+      <tr>
+        <td><strong>${e(n.name)}</strong>
+          <div class="form-hint">${n.submitter
+            ? `<i class="fas fa-user"></i> ${e(n.submitter.name)} • ${e(n.submitter.email)} • +91 ${e(n.submitter.phone)}`
+            : '<i class="fas fa-seedling"></i> Sample data'}</div></td>
+        <td>${n.registrationNumber ? `<code class="reg-code">${e(n.registrationNumber)}</code>` : '<span class="form-hint">Not provided</span>'}</td>
+        <td><strong>${e(n.category)}</strong><div class="form-hint"><i class="fas fa-map-marker-alt"></i> ${e(n.location)}</div></td>
+        <td>${n.website ? `<a href="${HC.safeUrl(n.website)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> Visit site</a>` : '<span class="form-hint">None provided</span>'}</td>
+        <td>${ngoStatusPill(n.statusKey)}${n.statusReason ? `<div class="form-hint">${e(n.statusReason)}</div>` : ''}</td>
+        <td><div class="table-actions">
+          <button type="button" class="btn btn-xs btn-outline" data-ngo-details="${e(n.id)}"><i class="fas fa-eye"></i> Details</button>
+          ${n.statusKey !== 'verified' ? `<button type="button" class="btn btn-xs btn-green" data-ngo-verify="${e(n.id)}"><i class="fas fa-check"></i> Verify</button>` : ''}
+          ${n.statusKey !== 'rejected' ? `<button type="button" class="btn btn-xs btn-outline btn-danger-outline" data-ngo-reject="${e(n.id)}" data-name="${e(n.name)}"><i class="fas fa-ban"></i> Reject</button>` : ''}
+        </div>
+        <div class="ngo-details" id="ngo-details-${e(n.id)}" hidden>
+          <p>${e(n.description)}</p>
+          <p class="form-hint">Email: ${e(n.email)} • Founded: ${e(n.foundedYear || '—')} • Submitted: ${HC.formatDate(n.submittedAt)}</p>
+        </div></td>
+      </tr>`).join('');
+
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="admin-card">
+        <h2><i class="fas fa-shield-alt" style="color: var(--accent-green);"></i> Non-profit verification & compliance queue</h2>
+        <p>Review registration details and credentials, then approve or reject publishing privileges.</p>
+        <div class="admin-toolbar">
+          ${filterChips('data-ngo-filter', state.ngos.status, [['pending', `Pending review (${counts.pending})`], ['verified', `Verified (${counts.verified})`], ['rejected', `Rejected (${counts.rejected})`], ['', 'All records']])}
+          <input type="search" class="form-control" id="ngoSearch" placeholder="Search organization..." value="${e(state.ngos.search)}" style="max-width: 260px;">
+        </div>
+        ${table(['Organization & submitter', 'Reg. number', 'Cause & city', 'Website', 'Status', 'Actions'], rows, 'Nothing here.')}
+      </div>`;
+    wireSearch('ngoSearch', v => { state.ngos.search = v; return loadNgos(); });
+  }
+
+  function ngoStatusPill(status) {
+    return {
+      verified: '<span class="badge-status-pill unlocked">Verified</span>',
+      pending: '<span class="badge-status-pill pending">Pending</span>',
+      rejected: '<span class="badge-status-pill closed">Rejected</span>'
+    }[status] || e(status);
+  }
+
+  /* ---------------- Users ---------------- */
   async function loadUsers() {
-    const params = new URLSearchParams({ page: String(adminState.page) });
-    const firstLoad = adminState.status === null;
-    if (firstLoad) adminState.status = '';
-    if (adminState.status) params.set('status', adminState.status);
-    if (adminState.search) params.set('search', adminState.search);
+    const params = new URLSearchParams({ page: String(state.users.page) });
+    if (state.users.status) params.set('status', state.users.status);
+    if (state.users.search) params.set('search', state.users.search);
+    const res = await api('GET', `/api/admin/users?${params}`);
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const d = res.data;
+    const pages = Math.max(1, Math.ceil(d.total / d.pageSize));
+    const statusPill = {
+      pending: '<span class="badge-status-pill pending">Pending</span>',
+      approved: '<span class="badge-status-pill unlocked">Active</span>',
+      rejected: '<span class="badge-status-pill closed">Rejected</span>',
+      suspended: '<span class="badge-status-pill locked">Suspended</span>'
+    };
 
-    const body = document.getElementById('adminUsersBody');
-    body.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    const rows = d.users.map(u => {
+      const actions = u.status === 'approved'
+        ? `<button type="button" class="btn btn-xs btn-outline btn-danger-outline" data-user-action="suspended" data-id="${e(u.id)}" data-name="${e(u.name)}"><i class="fas fa-user-slash"></i> Suspend</button>`
+        : u.status === 'pending'
+          ? `<button type="button" class="btn btn-xs btn-green" data-user-action="approved" data-id="${e(u.id)}" data-name="${e(u.name)}">Approve</button>
+             <button type="button" class="btn btn-xs btn-outline" data-user-action="rejected" data-id="${e(u.id)}" data-name="${e(u.name)}">Reject</button>`
+          : `<button type="button" class="btn btn-xs btn-outline" data-user-action="approved" data-id="${e(u.id)}" data-name="${e(u.name)}">Re-activate</button>`;
+      return `
+        <tr>
+          <td><strong>${e(u.name)}</strong><div class="form-hint">${e(u.email)} • +91 ${e(u.phone)}</div></td>
+          <td><strong class="role-tag">${e(ROLE_LABEL[u.role] || u.role)}</strong></td>
+          <td>${u.emailVerified ? '<span class="badge-status-pill unlocked"><i class="fas fa-check"></i> Verified</span>' : '<span class="badge-status-pill pending">Not verified</span>'}</td>
+          <td>${statusPill[u.status] || e(u.status)}${u.statusReason ? `<div class="form-hint">${e(u.statusReason)}</div>` : ''}</td>
+          <td style="white-space: nowrap;">${new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+          <td style="white-space: nowrap;">${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+          <td><div class="table-actions">${actions}</div></td>
+        </tr>`;
+    }).join('');
 
-    const { ok, status, data } = await HC.api('GET', `/api/admin/users?${params}`);
-    if (handleSessionLoss(status)) return;
-    if (!ok) {
-      body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #A93226;">${HC.escape(data.error || 'Could not load users.')}</td></tr>`;
+    const total = Object.values(d.counts).reduce((a, b) => a + b, 0);
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="admin-card">
+        <h2>User account management</h2>
+        <p>View accounts, roles and email verification, and manage suspensions. (Suspending asks for your admin password again.)</p>
+        <div class="admin-toolbar">
+          ${filterChips('data-user-filter', state.users.status, [['', `All (${total})`], ['approved', `Active (${d.counts.approved})`], ['suspended', `Suspended (${d.counts.suspended})`], ['pending', `Pending (${d.counts.pending})`], ['rejected', `Rejected (${d.counts.rejected})`]])}
+          <input type="search" class="form-control" id="userSearch" placeholder="Search name, email or mobile..." value="${e(state.users.search)}" style="max-width: 260px;">
+        </div>
+        ${table(['User', 'Role', 'Email', 'Status', 'Registered', 'Last login', 'Actions'], rows, 'No users here.')}
+        ${pager(d.page, pages, d.total, 'users')}
+      </div>`;
+    wireSearch('userSearch', v => { state.users.search = v; state.users.page = 1; return loadUsers(); });
+  }
+
+  function pager(page, pages, total, kind) {
+    return `
+      <div class="admin-pagination">
+        <span>${e(total)} total • page ${e(page)} of ${e(pages)}</span>
+        <button type="button" class="btn btn-xs btn-outline" data-page="${kind}:${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>
+        <button type="button" class="btn btn-xs btn-outline" data-page="${kind}:${page + 1}" ${page >= pages ? 'disabled' : ''}>Next ›</button>
+      </div>`;
+  }
+
+  /* ---------------- Audit logs ---------------- */
+  function auditParams(includePage = true) {
+    const params = new URLSearchParams();
+    const a = state.audit;
+    if (includePage) params.set('page', String(a.page));
+    for (const k of ['search', 'action', 'from', 'to']) if (a[k]) params.set(k, a[k]);
+    return params;
+  }
+
+  async function loadAudit() {
+    const res = await api('GET', `/api/admin/audit-logs?${auditParams()}`);
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const d = res.data;
+    const pages = Math.max(1, Math.ceil(d.total / d.pageSize));
+    const tone = a => (/FAILED|SUSPEND|REJECT|TAKEDOWN|LOGOUT|DELETED/.test(a) ? 'danger' : /SUCCESS|VERIFIED|CREATED|JOINED/.test(a) ? 'good' : 'info');
+
+    const rows = d.logs.map(l => `
+      <tr>
+        <td style="white-space: nowrap;"><strong>${new Date(l.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+          <div class="form-hint">${new Date(l.timestamp).toLocaleTimeString('en-IN')}</div></td>
+        <td><span class="audit-action ${tone(l.action)}">${e(l.action)}</span></td>
+        <td><strong>${e(l.actorName || '—')}</strong><div class="form-hint">${e(l.actorRole)}</div></td>
+        <td>${e(l.targetType || '—')}<div class="form-hint mono">${e(l.targetId ? l.targetId.slice(0, 10) + '…' : '')}</div></td>
+        <td class="audit-details">${e(l.details)}</td>
+        <td class="mono">${e(l.ip)}</td>
+      </tr>`).join('');
+
+    const a = state.audit;
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="admin-card">
+        <div class="admin-card-head">
+          <div><h2><i class="fas fa-history" style="color: var(--accent-blue);"></i> Platform security & system audit trail</h2>
+            <p>Append-only log of sign-ups, logins, verifications, admin actions and content events.</p></div>
+          <a class="btn btn-sm btn-outline" id="auditExport" href="${e(HC.API_BASE)}/api/admin/audit-logs/export?${auditParams(false)}" data-no-router download><i class="fas fa-file-csv"></i> Export CSV</a>
+        </div>
+        <form class="audit-filters" id="auditFilters">
+          <input type="search" class="form-control" id="auditSearch" placeholder="Search actor, action, IP..." value="${e(a.search)}">
+          <select class="form-control" id="auditAction"><option value="">All event types</option>${d.actions.map(x => `<option ${a.action === x ? 'selected' : ''}>${e(x)}</option>`).join('')}</select>
+          <input type="date" class="form-control" id="auditFrom" value="${e(a.from)}" aria-label="From date">
+          <input type="date" class="form-control" id="auditTo" value="${e(a.to)}" aria-label="To date">
+          <button type="submit" class="btn btn-sm btn-green"><i class="fas fa-filter"></i> Filter</button>
+          <button type="button" class="btn btn-sm btn-outline" id="auditReset">Reset</button>
+        </form>
+        ${table(['Timestamp', 'Action', 'Actor / user', 'Target', 'Details', 'IP address'], rows, 'No events match these filters.')}
+        ${pager(d.page, pages, d.total, 'audit')}
+      </div>`;
+
+    document.getElementById('auditFilters').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      Object.assign(state.audit, {
+        search: document.getElementById('auditSearch').value.trim(),
+        action: document.getElementById('auditAction').value,
+        from: document.getElementById('auditFrom').value,
+        to: document.getElementById('auditTo').value,
+        page: 1
+      });
+      loadAudit();
+    });
+    document.getElementById('auditReset').addEventListener('click', () => {
+      state.audit = { search: '', action: '', from: '', to: '', page: 1 };
+      loadAudit();
+    });
+  }
+
+  /* ---------------- Leaderboard ---------------- */
+  async function loadLeaderboard() {
+    const res = await api('GET', `/api/admin/leaderboard?type=${state.board}`);
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const medal = r => (r.rank <= 3 ? `<span class="rank-medal rank-${r.rank}">🏅 #${r.rank}</span>` : `#${r.rank}`);
+    const tier = t => `<span class="tier tier-${e(t.toLowerCase())}">${e(t)}</span>`;
+    const pts = r => `<strong style="color: var(--accent-blue);">${e(r.points)}</strong> pts`;
+    const configs = {
+      volunteers: {
+        headers: ['Rank', 'Volunteer', 'Verified service', 'Drives attended', 'Impact points', 'Badge tier'],
+        row: r => `<td>${medal(r)}</td><td><strong>${e(r.name)}</strong><div class="form-hint">${e(r.email)}</div></td><td><strong>${e(r.hours)}</strong> hrs</td><td>${e(r.events)}</td><td>${pts(r)}</td><td>${tier(r.tier)}</td>`
+      },
+      donors: {
+        headers: ['Rank', 'Donor', 'Pledged (demo)', 'Campaigns supported', 'Impact points', 'Badge tier'],
+        row: r => `<td>${medal(r)}</td><td><strong>${e(r.name)}</strong><div class="form-hint">${e(r.email)}</div></td><td><strong>${HC.formatINR(r.amount)}</strong></td><td>${e(r.campaignsSupported)}</td><td>${pts(r)}</td><td>${tier(r.tier)}</td>`
+      },
+      ngos: {
+        headers: ['Rank', 'NGO', 'Volunteers attended', 'Hours delivered', 'Raised (demo)', 'Impact points', 'Badge tier'],
+        row: r => `<td>${medal(r)}</td><td><strong>${e(r.name)}</strong><div class="form-hint">${e(r.location)} • ${e(r.category)}</div></td><td>${e(r.volunteers)}</td><td>${e(r.hours)} hrs</td><td>${HC.formatINR(r.raised)}</td><td>${pts(r)}</td><td>${tier(r.tier)}</td>`
+      }
+    };
+    const cfg = configs[state.board];
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="admin-card">
+        <div class="admin-card-head">
+          <div><h2><i class="fas fa-trophy" style="color: var(--accent-gold-hover);"></i> Platform impact leaderboard</h2>
+            <p>Volunteers: 10 pts per attended hour • Donors: 1 pt per ₹100 • NGOs: 10 pts per volunteer hour + 1 pt per ₹1,000.</p></div>
+          ${filterChips('data-board', state.board, [['volunteers', '🙋 Volunteers'], ['donors', '❤️ Donors'], ['ngos', '🏢 NGOs']])}
+        </div>
+        ${table(cfg.headers, res.data.rows.map(r => `<tr>${cfg.row(r)}</tr>`).join(''), 'No one on the board yet.')}
+      </div>`;
+  }
+
+  /* ---------------- Flagged content ---------------- */
+  async function loadReports() {
+    const res = await api('GET', `/api/admin/reports${state.reports ? `?status=${state.reports}` : ''}`);
+    if (!res) return;
+    if (!res.ok) return showError(res.data.error);
+    const { reports, counts } = res.data;
+    setBadge('reports', counts.open);
+    const typeLabel = { ngo: 'NGO', campaign: 'Campaign', opportunity: 'Drive' };
+    const rows = reports.map(r => `
+      <tr>
+        <td><strong>${e(r.targetName || '(deleted)')}</strong><div class="form-hint">${e(typeLabel[r.targetType] || r.targetType)}</div></td>
+        <td><strong style="text-transform: capitalize;">${e(r.reason)}</strong><div class="form-hint">${e(r.details || '')}</div></td>
+        <td>${r.reporter ? `${e(r.reporter.name)}<div class="form-hint">${e(r.reporter.email)}</div>` : '—'}</td>
+        <td style="white-space: nowrap;">${new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+        <td>${r.status === 'open'
+          ? `<div class="table-actions">
+               <button type="button" class="btn btn-xs btn-outline btn-danger-outline" data-report-action="takedown" data-id="${e(r.id)}" data-name="${e(r.targetName)}"><i class="fas fa-ban"></i> Take down</button>
+               <button type="button" class="btn btn-xs btn-outline" data-report-action="dismiss" data-id="${e(r.id)}" data-name="${e(r.targetName)}">Dismiss</button>
+             </div>`
+          : `<span class="badge-status-pill ${r.status === 'actioned' ? 'closed' : 'locked'}">${r.status === 'actioned' ? 'Taken down' : 'Dismissed'}</span><div class="form-hint">${e(r.resolutionNote)}</div>`}</td>
+      </tr>`).join('');
+
+    document.getElementById('adminTabContent').innerHTML = `
+      <div class="admin-card">
+        <h2><i class="fas fa-flag" style="color: #C0392B;"></i> Flagged content</h2>
+        <p>Reports from users about NGOs, campaigns and drives. "Take down" rejects the NGO or closes the campaign/drive.</p>
+        <div class="admin-toolbar">
+          ${filterChips('data-report-filter', state.reports, [['open', `Open (${counts.open})`], ['actioned', `Taken down (${counts.actioned})`], ['dismissed', `Dismissed (${counts.dismissed})`], ['', 'All']])}
+        </div>
+        ${table(['Reported item', 'Reason', 'Reported by', 'When', 'Action'], rows, 'No reports here. 🎉')}
+      </div>`;
+  }
+
+  /* ==========================================================================
+     Actions (one handler for the whole tab area)
+     ========================================================================== */
+  function wireSearch(id, onSearch) {
+    let timer;
+    const input = document.getElementById(id);
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const pos = input.selectionStart;
+        await onSearch(input.value.trim());
+        const again = document.getElementById(id);
+        again?.focus();
+        again?.setSelectionRange(pos, pos);
+      }, 350);
+    });
+  }
+
+  async function handleAction(ev) {
+    const btn = ev.target.closest('button');
+    if (!btn || btn.disabled) return;
+    const d = btn.dataset;
+
+    if (d.goto) return switchTab(d.goto);
+    if (d.ngoFilter !== undefined) { state.ngos.status = d.ngoFilter; return loadNgos(); }
+    if (d.userFilter !== undefined) { state.users.status = d.userFilter; state.users.page = 1; return loadUsers(); }
+    if (d.reportFilter !== undefined) { state.reports = d.reportFilter; return loadReports(); }
+    if (d.board) { state.board = d.board; return loadLeaderboard(); }
+    if (d.page) {
+      const [kind, page] = d.page.split(':');
+      state[kind].page = Number(page);
+      return kind === 'users' ? loadUsers() : loadAudit();
+    }
+    if (d.ngoDetails) {
+      const box = document.getElementById(`ngo-details-${d.ngoDetails}`);
+      box.hidden = !box.hidden;
       return;
     }
-
-    // First load: when admins must approve accounts, start on the "Pending" tab
-    if (firstLoad && data.requireAdminApproval && data.counts?.pending) {
-      adminState.status = 'pending';
-      document.getElementById('adminPanelHint').textContent = "Admin approval is ON: new accounts can't log in until you approve them.";
-      return loadUsers();
+    if (d.ngoVerify) return runAction(btn, 'PATCH', `/api/admin/ngos/${encodeURIComponent(d.ngoVerify)}/status`, { status: 'verified' }, loadNgos);
+    if (d.ngoReject) {
+      return openReasonModal({
+        title: `Reject ${d.name}?`, intro: 'The NGO will see this reason in their dashboard and can fix and resubmit.', button: 'Reject', needPassword: false,
+        send: (reason) => HC.api('PATCH', `/api/admin/ngos/${encodeURIComponent(d.ngoReject)}/status`, { status: 'rejected', reason }), reload: loadNgos
+      });
     }
-    document.querySelectorAll('.admin-status-tab').forEach(t => t.classList.toggle('active', t.dataset.status === adminState.status));
-
-    // Counts on the status tabs
-    const counts = data.counts || {};
-    const all = Object.values(counts).reduce((a, b) => a + b, 0);
-    document.querySelectorAll('[data-count]').forEach(el => {
-      el.textContent = el.dataset.count === 'all' ? all : (counts[el.dataset.count] || 0);
-    });
-
-    adminState.totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-    document.getElementById('adminPageInfo').textContent =
-      `${data.total} user${data.total === 1 ? '' : 's'} • page ${data.page} of ${adminState.totalPages}`;
-    document.getElementById('adminPrevPage').disabled = data.page <= 1;
-    document.getElementById('adminNextPage').disabled = data.page >= adminState.totalPages;
-
-    body.innerHTML = data.users.length ? data.users.map(renderUserRow).join('') :
-      '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No users here.</td></tr>';
-  }
-
-  const ROLE_LABEL = { volunteer: 'Volunteer', donor: 'Donor', ngo: 'NGO' };
-
-  const STATUS_PILL = {
-    pending: '<span class="badge-status-pill pending">Pending</span>',
-    approved: '<span class="badge-status-pill unlocked">Approved</span>',
-    rejected: '<span class="badge-status-pill closed">Rejected</span>',
-    suspended: '<span class="badge-status-pill locked">Suspended</span>'
-  };
-
-  function renderUserRow(user) {
-    const e = HC.escape;
-    const signedUp = new Date(user.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-    const button = (action, label, style) =>
-      `<button type="button" class="btn btn-xs ${style}" data-action="${action}" data-id="${e(user.id)}" data-name="${e(user.name)}">${label}</button>`;
-
-    const actions = {
-      pending: button('approved', '<i class="fas fa-check"></i> Approve', 'btn-green') + button('rejected', 'Reject', 'btn-outline'),
-      approved: button('suspended', 'Suspend', 'btn-outline'),
-      rejected: button('approved', 'Approve', 'btn-outline'),
-      suspended: button('approved', 'Re-activate', 'btn-outline')
-    }[user.status] || '';
-
-    return `
-      <tr>
-        <td><strong>${e(user.name)}</strong><div style="font-size: 0.8rem; color: var(--text-muted);">${e(user.email)}</div></td>
-        <td>${e(user.phone)}</td>
-        <td>${e(ROLE_LABEL[user.role] || user.role)}</td>
-        <td>${user.emailVerified
-          ? '<span class="badge-status-pill unlocked"><i class="fas fa-check"></i> Verified</span>'
-          : '<span class="badge-status-pill pending">Not verified</span>'}</td>
-        <td style="white-space: nowrap;">${e(signedUp)}</td>
-        <td>${STATUS_PILL[user.status] || e(user.status)}
-          ${user.statusReason ? `<div style="font-size: 0.75rem; color: var(--text-muted); max-width: 200px;">${e(user.statusReason)}</div>` : ''}</td>
-        <td><div class="table-actions">${actions}</div></td>
-      </tr>`;
-  }
-
-  async function updateStatus(userId, status, reason, buttonEl) {
-    HC.setLoading(buttonEl, true, '...');
-    const { ok, status: httpStatus, data } = await HC.api('PATCH', `/api/admin/users/${encodeURIComponent(userId)}/status`, { status, reason });
-    HC.setLoading(buttonEl, false);
-    if (handleSessionLoss(httpStatus)) return false;
-    if (!ok) {
-      window.showToast(data.error || 'Could not update the user.', 'error', 'fas fa-exclamation-circle');
-      return false;
+    if (d.userAction === 'approved') return runAction(btn, 'PATCH', `/api/admin/users/${encodeURIComponent(d.id)}/status`, { status: 'approved' }, loadUsers);
+    if (d.userAction) {
+      const suspend = d.userAction === 'suspended';
+      return openReasonModal({
+        title: `${suspend ? 'Suspend' : 'Reject'} ${d.name}?`,
+        intro: suspend ? 'They will be logged out on every device immediately and cannot log in until re-activated.' : 'They will not be able to log in.',
+        button: suspend ? 'Suspend' : 'Reject', needPassword: true,
+        send: (reason, adminPassword) => HC.api('PATCH', `/api/admin/users/${encodeURIComponent(d.id)}/status`, { status: d.userAction, reason, adminPassword }),
+        reload: loadUsers
+      });
     }
-    window.showToast(data.message, 'success', 'fas fa-user-check');
-    loadUsers();
-    return true;
+    if (d.reportAction) {
+      const takedown = d.reportAction === 'takedown';
+      return openReasonModal({
+        title: takedown ? `Take down "${d.name}"?` : `Dismiss report about "${d.name}"?`,
+        intro: takedown ? 'This rejects the NGO or closes the campaign/drive, and resolves all open reports about it.' : 'All open reports about this item will be marked as dismissed.',
+        button: takedown ? 'Take down' : 'Dismiss', needPassword: false, optionalReason: !takedown,
+        send: (note) => HC.api('PATCH', `/api/admin/reports/${encodeURIComponent(d.id)}`, { action: d.reportAction, note: note || undefined }),
+        reload: loadReports
+      });
+    }
   }
 
-  /* ---------------- Reject / suspend reason ---------------- */
-  function openReasonModal(userId, status, name) {
-    adminState.pendingAction = { userId, status, name };
-    const verb = status === 'rejected' ? 'Reject' : 'Suspend';
-    document.getElementById('reasonTitle').textContent = `${verb} ${name}?`;
-    document.getElementById('reasonIntro').textContent = status === 'rejected'
-      ? 'They will not be able to log in. You can approve them later if needed.'
-      : 'They will be logged out on every device immediately and cannot log in until re-activated.';
-    document.getElementById('reasonSubmit').textContent = verb;
-    const text = document.getElementById('reasonText');
-    text.value = '';
-    HC.setFieldError(text, '');
+  async function runAction(btn, method, path, body, reload) {
+    HC.setLoading(btn, true, '...');
+    const res = await api(method, path, body);
+    if (!res) return;
+    HC.setLoading(btn, false);
+    if (!res.ok) return window.showToast(res.data.error || 'Action failed.', 'error', 'fas fa-exclamation-circle');
+    window.showToast(res.data.message || 'Done.', 'success', 'fas fa-check');
+    reload();
+  }
+
+  /* ---------------- Reason (+ password) modal ---------------- */
+  function openReasonModal(action) {
+    state.pendingAction = action;
+    document.getElementById('reasonTitle').textContent = action.title;
+    document.getElementById('reasonIntro').textContent = action.intro;
+    document.getElementById('reasonSubmit').textContent = action.button;
+    document.getElementById('reasonLabel').textContent = action.optionalReason ? 'Note (optional)' : 'Reason *';
+    document.getElementById('reauthGroup').hidden = !action.needPassword;
+    document.getElementById('reasonText').value = '';
+    document.getElementById('reauthPassword').value = '';
+    HC.clearFieldErrors(document.getElementById('reasonForm'));
     window.openModal('reasonModal');
   }
 
   function setupReasonModal() {
     const form = document.getElementById('reasonForm');
     const text = document.getElementById('reasonText');
+    const pass = document.getElementById('reauthPassword');
     const submit = document.getElementById('reasonSubmit');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (submit.disabled || !adminState.pendingAction) return;
-      const valid = HC.validateFields([
-        { input: text, checks: [v => (v.length >= 3 ? '' : 'Please give a short reason (at least 3 characters).')] }
-      ]);
-      if (!valid) return;
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const action = state.pendingAction;
+      if (submit.disabled || !action) return;
+      const rules = [];
+      if (!action.optionalReason) rules.push({ input: text, checks: [v => (v.length >= 3 ? '' : 'Please give a short reason (at least 3 characters).')] });
+      if (action.needPassword) rules.push({ input: pass, raw: true, checks: [v => (v ? '' : 'Enter your admin password.')] });
+      if (rules.length && !HC.validateFields(rules)) return;
 
-      const { userId, status } = adminState.pendingAction;
-      if (await updateStatus(userId, status, text.value.trim(), submit)) {
-        adminState.pendingAction = null;
+      HC.setLoading(submit, true, 'Working...');
+      const res = await action.send(text.value.trim(), pass.value);
+      HC.setLoading(submit, false);
+      pass.value = '';
+      if (sessionLost(res.status)) {
         window.closeModal('reasonModal');
+        return;
       }
+      if (!res.ok) {
+        if (!HC.showServerErrors({ reason: text, adminPassword: pass, note: text }, res.data)) {
+          window.showToast(res.data.error || 'Action failed.', 'error', 'fas fa-exclamation-circle');
+        }
+        return;
+      }
+      state.pendingAction = null;
+      window.closeModal('reasonModal');
+      window.showToast(res.data.message || 'Done.', 'success', 'fas fa-check');
+      action.reload();
     });
   }
 })();

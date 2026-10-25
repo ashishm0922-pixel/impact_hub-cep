@@ -33,7 +33,7 @@ You should see `Connected to MongoDB.` and `Admin account "admin" created.`
 >
 > **Error `bad auth`?** The username/password in `MONGODB_URI` is wrong. Most often `<db_password>` was left in instead of the real password.
 
-> **No Atlas yet?** Run `npm run dev:local`. It starts a local MongoDB for you (data saved in `backend/.local-mongo/`). Good for trying things out; use Atlas for real data.
+> **No Atlas yet?** Run `npm run dev:local`. It starts a local MongoDB for you (data saved in `backend/.local-mongo/`). Good for trying things out; use Atlas for real data. This mode **never sends real emails**: verification links are printed in the terminal.
 
 ## 2. Admin account
 
@@ -100,35 +100,54 @@ To really send emails with Gmail:
 | `npm run email:test` | Send one test email with the SMTP settings in `.env` |
 | `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
-| `npm run seed` | Add sample NGOs, drives and a campaign |
-| `npm test` | 59 automated tests (uses a temporary in-memory MongoDB) |
+| `npm run seed` | Add sample NGOs, drives and campaigns (only if the database has no NGOs; also done automatically at start-up) |
+| `npm test` | 80 automated tests (uses a temporary in-memory MongoDB) |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` / `npm start` | Compile to `dist/` and run in production |
 
 ## 5. API
 
+**Rule:** anything that creates or joins something needs a logged-in account. Visitors can only browse.
+
 | Method | Path | Who | Notes |
 |---|---|---|---|
 | GET | `/api/health` | anyone | `{ status, database }` |
+| GET | `/api/catalog` | anyone | NGOs, drives and campaigns of verified NGOs |
+| GET | `/api/leaderboard?type=volunteers\|donors` | anyone | public; "First L." names only, anonymous users hidden, no emails |
 | POST | `/api/auth/signup` | anyone | `{ name, email, phone, role, password, confirmPassword }` → account + verification email |
-| POST | `/api/auth/verify-email` | anyone | `{ token }` from the email link |
-| POST | `/api/auth/resend-verification` | user | new link (3 per 15 min) |
-| POST | `/api/auth/login` | anyone | `{ identifier: email or mobile, password }` → sets cookie |
+| POST | `/api/auth/login` | anyone | `{ identifier: email or 10-digit mobile, password }` → sets cookie |
 | POST | `/api/auth/logout` | anyone | ends the session |
 | GET | `/api/auth/session` | anyone | `{ user }` or `{ user: null }` (always 200) |
-| GET | `/api/auth/me` | user | 401 if not logged in |
-| POST | `/api/admin/auth/login` | anyone | `{ username, password }` |
-| POST | `/api/admin/auth/logout` | admin | |
-| GET | `/api/admin/auth/me` | admin | |
-| GET | `/api/admin/users?status=&search=&page=` | admin | list + counts per status |
-| PATCH | `/api/admin/users/:id/status` | admin | `{ status: approved/rejected/suspended, reason }` |
-| GET | `/api/ngos`, `/api/opportunities`, `/api/campaigns` | anyone | listings |
-| POST | `/api/ngos` | anyone | NGO application → `pending` |
-| POST | `/api/opportunities/:id/registrations` | verified user | uses the account's name/email/phone |
-| POST | `/api/campaigns/:id/donations` | – | `501`: payments not connected yet (on purpose) |
+| POST | `/api/auth/verify-email` | anyone | `{ token }` from the email link |
+| POST | `/api/auth/resend-verification` | user | new link (3 per 15 min) |
+| GET | `/api/me/activity` | user | my drive registrations and pledges |
+| PATCH | `/api/me/profile` | user | `{ name, city, anonymous }` (email/phone are login details and can't change) |
+| POST | `/api/opportunities/:id/registrations` | verified volunteer/donor | join a drive (uses the account's name/email/phone) |
+| POST | `/api/me/registrations/:id/cancel` | user | cancel my sign-up |
+| POST | `/api/campaigns/:id/pledges` | verified user | **demo** pledge, no money is charged |
+| POST | `/api/reports` | user | flag an NGO, campaign or drive for admin review |
 | POST | `/api/contact` | anyone | contact message |
+| GET | `/api/ngo/console` | NGO | my organization, drives, campaigns, **participants** and supporters |
+| POST | `/api/ngo/organization` | NGO | register / resubmit the organization (starts as `pending`) |
+| POST/PATCH/DELETE | `/api/ngo/opportunities` | verified NGO | publish / close / delete drives |
+| POST/PATCH/DELETE | `/api/ngo/campaigns` | verified NGO | publish / close / delete campaigns |
+| PATCH | `/api/ngo/registrations/:id` | verified NGO | mark Attended / No-show / Cancelled (on or after the event day) |
+| POST | `/api/admin/auth/login` | anyone | `{ username, password }` |
+| GET | `/api/admin/overview` | admin | dashboard numbers |
+| GET/PATCH | `/api/admin/ngos`, `/api/admin/ngos/:id/status` | admin | verification queue; reject needs a reason |
+| GET/PATCH | `/api/admin/users`, `/api/admin/users/:id/status` | admin | suspending/rejecting needs a reason **and the admin password again** |
+| GET | `/api/admin/audit-logs` (+ `/export`) | admin | search, filter, CSV export (formula-safe) |
+| GET | `/api/admin/leaderboard?type=volunteers\|donors\|ngos` | admin | full rows incl. email |
+| GET/PATCH | `/api/admin/reports`, `/api/admin/reports/:id` | admin | flagged content: dismiss or take down |
+| POST | `/api/campaigns/:id/donations` | – | `501`: real payments are not connected yet (on purpose) |
 
 Errors always look like `{ "error": "message", "code": "MACHINE_CODE", "fields": [{ "field": "phone", "message": "..." }] }`.
+
+### Tiers and points (same numbers in `frontend/assets/js/core/constants.js`)
+| | Points | Bronze | Silver | Gold | Platinum |
+|---|---|---|---|---|---|
+| Volunteers | 10 per **confirmed** hour | 0 h | 15 h | 35 h | 70 h |
+| Donors | 1 per ₹100 pledged | < ₹2,500 | ₹2,500 | ₹10,000 | ₹50,000 |
 
 ## 6. Folder layout
 ```

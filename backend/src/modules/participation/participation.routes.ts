@@ -7,7 +7,10 @@ import { NgoModel } from '../../models/ngo.model';
 import { OpportunityModel, RegistrationModel } from '../../models/opportunity.model';
 import { REPORT_REASONS, REPORT_TARGETS, ReportModel } from '../../models/report.model';
 import { AVAILABILITY } from '../../models/shared';
-import { objectIdSchema } from '../../shared/schemas';
+import { nameSchema, objectIdSchema } from '../../shared/schemas';
+import { UserModel } from '../../models/user.model';
+import { publicUser } from '../auth/auth.service';
+import { donorLeaderboard, publicName, volunteerLeaderboard } from '../admin/leaderboard.service';
 import { todayISODate, toISODate } from '../../utils/dates';
 import { HttpError } from '../../utils/http-error';
 import { audit } from '../audit/audit.service';
@@ -42,6 +45,42 @@ function requireVerifiedEmail(user: { emailVerified?: boolean | null }, what: st
     throw new HttpError(403, `Please verify your email before ${what}.`, { code: 'EMAIL_NOT_VERIFIED' });
   }
 }
+
+const profileSchema = z.object({
+  name: nameSchema,
+  city: z.string().trim().max(60, 'City is too long.')
+    .regex(/^[\p{L}][\p{L} .,'-]*$/u, 'City can only contain letters, spaces and basic punctuation.').optional().or(z.literal('')),
+  anonymous: z.boolean().default(false)
+});
+
+// GET /api/leaderboard?type=volunteers|donors — PUBLIC: first name + initial only, never emails/phones
+participationRoutes.get('/leaderboard', async (req, res) => {
+  const { type } = z.object({ type: z.enum(['volunteers', 'donors']).default('volunteers') }).parse(req.query);
+  if (type === 'donors') {
+    const rows = (await donorLeaderboard(20)).filter(r => r.amount > 0);
+    return res.json({ type, rows: rows.map((r, i) => ({
+      rank: i + 1, name: publicName(r.name, r.anonymous, 'Donor'), city: r.anonymous ? '' : r.city,
+      amount: r.amount, campaignsSupported: r.campaignsSupported, points: r.points, tier: r.tier
+    })) });
+  }
+  const rows = (await volunteerLeaderboard(20)).filter(r => r.points > 0);
+  res.json({ type, rows: rows.map((r, i) => ({
+    rank: i + 1, name: publicName(r.name, r.anonymous, 'Volunteer'), city: r.anonymous ? '' : r.city,
+    hours: r.hours, events: r.events, points: r.points, tier: r.tier
+  })) });
+});
+
+// PATCH /api/me/profile — name, city and "anonymous on leaderboards" (email/phone are login details and stay fixed)
+participationRoutes.patch('/me/profile', requireUser, async (req, res) => {
+  const data = profileSchema.parse(req.body);
+  const user = req.user!;
+  user.name = data.name;
+  user.city = data.city || undefined;
+  user.anonymous = data.anonymous;
+  await user.save();
+  await audit(req, 'PROFILE_UPDATED', { target: { type: 'User', id: user._id }, details: { anonymous: data.anonymous } });
+  res.json({ message: 'Profile saved.', user: publicUser(user) });
+});
 
 // GET /api/catalog — everything the public pages show
 participationRoutes.get('/catalog', async (_req, res) => {
