@@ -136,28 +136,25 @@
         <!-- Rendered dynamically by dashboard.js -->
       </div>
 
-      <!-- Certificate Generator Preview Section -->
+      <!-- Participation certificate: volunteers and donors only -->
       <div class="certificate-section-card" id="certificate">
         <div class="section-header" style="margin-bottom: 1.5rem;">
           <div class="section-badge"><i class="fas fa-certificate"></i> Participation Certificate</div>
-          <h2>Download Volunteer Certificate</h2>
-          <p>Generated from your attended hours on this demo. It is <strong>not</strong> an officially verified credential yet.</p>
+          <h2>Your Participation Certificate</h2>
+          <p>For <strong>volunteers</strong> (after an NGO confirms your attendance) and <strong>donors</strong> (after your first pledge). Your name and numbers come from your account records and cannot be edited. Anyone can check the certificate ID on the verification page.</p>
         </div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; max-width: 500px; margin: 0 auto 1.5rem auto; flex-wrap: wrap;">
-          <input type="text" class="form-control" id="certVolunteerName" placeholder="Enter full name for certificate" maxlength="40" style="max-width: 320px;">
-          <button class="btn btn-primary" id="updateCertBtn"><i class="fas fa-sync-alt"></i> Update Preview</button>
-        </div>
+        <div id="certStatus" class="cert-status" aria-live="polite"></div>
 
-        <!-- Canvas Wrap -->
-        <div class="cert-preview-canvas-wrap">
+        <div class="cert-preview-canvas-wrap" id="certCanvasWrap" hidden>
           <canvas id="certificateCanvas"></canvas>
         </div>
 
-        <div style="text-align: center; margin-top: 1.5rem;">
+        <div style="text-align: center; margin-top: 1.5rem;" id="certActions" hidden>
           <button class="btn btn-lg btn-green" id="downloadCertBtn">
-            <i class="fas fa-download"></i> Download Volunteer Certificate (PNG)
+            <i class="fas fa-download"></i> Download Certificate (PNG)
           </button>
+          <p style="margin-top: 0.75rem; font-size: 0.9rem;">Certificate ID: <a id="certVerifyLink" href="#"></a> (opens the public check)</p>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 /**
- * HopeConnect AI - Dynamic Volunteer Certificate Generator (HTML5 Canvas)
+ * HopeConnect AI - Participation Certificate (volunteers and donors only) (HTML5 Canvas)
  */
 
 // Private scope: lets this script run again on every visit (no-reload navigation)
@@ -10,15 +10,18 @@
 
   function initCertificateGenerator() {
     const canvas = document.getElementById('certificateCanvas');
-    const nameInput = document.getElementById('certVolunteerName');
-    const updateBtn = document.getElementById('updateCertBtn');
+    const status = document.getElementById('certStatus');
+    const wrap = document.getElementById('certCanvasWrap');
+    const actions = document.getElementById('certActions');
+    const verifyLink = document.getElementById('certVerifyLink');
     const downloadBtn = document.getElementById('downloadCertBtn');
 
-    if (!canvas) return;
+    if (!canvas || !status) return;
 
     const ctx = canvas.getContext('2d');
 
-    function drawCertificate(recipientName, hours, certificateId) {
+    function drawCertificate(cert) {
+      const recipientName = cert.recipientName;
       // Canvas dimensions (A4 Landscape aspect ratio)
       canvas.width = 1200;
       canvas.height = 840;
@@ -79,9 +82,16 @@
       // Body Text
       ctx.fillStyle = '#445159';
       ctx.font = '20px "Inter", sans-serif';
-      const bodyText1 = `In recognition of commitment to community service, contributing`;
-      const bodyText2 = `${hours} Attended Hour${hours === 1 ? '' : 's'} of Volunteering at Community Drives`;
-      const bodyText3 = `as recorded by organizers on the HopeConnect AI demo platform.`;
+      const isVolunteer = cert.kind === 'volunteer';
+      const bodyText1 = isVolunteer
+        ? 'In recognition of commitment to community service, contributing'
+        : 'In recognition of generosity towards community causes, supporting';
+      const bodyText2 = isVolunteer
+        ? `${cert.hours} Confirmed Hour${cert.hours === 1 ? '' : 's'} across ${cert.events} Volunteer Drive${cert.events === 1 ? '' : 's'}`
+        : `${cert.campaigns} Campaign${cert.campaigns === 1 ? '' : 's'} with Pledges of ${HC.formatINR(cert.amount)}`;
+      const bodyText3 = isVolunteer
+        ? 'Hours were confirmed by the organising NGOs on HopeConnect AI.'
+        : 'Pledges are demo pledges: no money has moved through HopeConnect AI.';
 
       ctx.fillText(bodyText1, canvas.width / 2, 400);
       ctx.fillStyle = '#5B9A6A';
@@ -95,7 +105,7 @@
       drawGoldSeal(ctx, canvas.width / 2, 590);
 
       // Signatures & Date
-      const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const todayStr = new Date(cert.issuedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
       // Left: Date
       ctx.textAlign = 'left';
@@ -125,13 +135,13 @@
       ctx.stroke();
       ctx.font = '14px "Inter", sans-serif';
       ctx.fillStyle = '#78848C';
-      ctx.fillText('HOPECONNECT AI (DEMO)', canvas.width - 140, 742);
+      ctx.fillText('HOPECONNECT AI', canvas.width - 140, 742);
 
-      // Certificate ID + honest demo disclaimer
+      // Certificate ID + where anyone can check it
       ctx.textAlign = 'center';
       ctx.fillStyle = '#8E9CA4';
       ctx.font = '13px "Inter", sans-serif';
-      ctx.fillText(`Certificate ID: ${certificateId}  •  Demo certificate generated in-browser. Not independently verified.`, canvas.width / 2, 785);
+      ctx.fillText(`Certificate ID: ${cert.code}  •  Verify at ${verifyUrl(cert.code)}`, canvas.width / 2, 785);
     }
 
     function drawCornerRibbon(ctx, x, y, flip = false) {
@@ -172,45 +182,57 @@
       ctx.restore();
     }
 
-    // A stable ID built from the name + hours, so the same inputs give the same ID
-    function makeCertificateId(name, hours) {
-      let hash = 0;
-      for (const ch of `${name}|${hours}`) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-      return 'HC-DEMO-' + hash.toString(36).toUpperCase().padStart(7, '0');
+    function verifyUrl(code) {
+      return new URL(`${HC.page('verify-certificate.html')}?code=${encodeURIComponent(code)}`, window.location.href).href;
     }
 
-    function currentHours() {
-      return window.HCStore.getUserStats().volunteerHours;
+    function showMessage(html) {
+      status.hidden = false;
+      status.innerHTML = html;
+      wrap.hidden = true;
+      actions.hidden = true;
     }
 
-    function render(showToast = false) {
-      const name = (nameInput.value.trim() || window.HCStore.getProfile().name || 'Volunteer').slice(0, 40);
-      const hours = currentHours();
-      drawCertificate(name, hours, makeCertificateId(name, hours));
-      if (showToast) window.showToast(`Certificate preview updated for "${name}"`, 'info', 'fas fa-pen-nib');
+    let current = null;
+
+    async function load() {
+      const user = window.Auth?.user;
+      const loginBtn = '<button type="button" class="btn btn-primary" data-auth="login"><i class="fas fa-sign-in-alt"></i> Log in</button>';
+      if (!user) {
+        return showMessage(`<p>Log in as a <strong>volunteer</strong> or <strong>donor</strong> to get your certificate.</p>${loginBtn}`);
+      }
+      if (user.role !== 'volunteer' && user.role !== 'donor') {
+        return showMessage('<p>Participation certificates are for <strong>volunteers and donors</strong> only. NGO accounts do not receive one.</p>');
+      }
+      if (!user.emailVerified) {
+        return showMessage('<p>Please verify your email first (use the link we sent you). Then your certificate can be created.</p>');
+      }
+
+      const { ok, status: code, data } = await HC.api('POST', '/api/me/certificate');
+      if (!ok) {
+        if (code === 409) {
+          return showMessage(`<p><i class="fas fa-lock"></i> ${HC.escape(data.error)}</p>` +
+            `<a class="btn btn-outline" href="${HC.escape(HC.page(user.role === 'volunteer' ? 'volunteer.html' : 'campaigns.html'))}">${user.role === 'volunteer' ? 'Find a drive' : 'See campaigns'}</a>`);
+        }
+        return showMessage(`<p>${HC.escape(data.error || 'Could not create your certificate. Please try again.')}</p>`);
+      }
+      current = data.certificate;
+      status.hidden = true;
+      wrap.hidden = false;
+      actions.hidden = false;
+      verifyLink.href = verifyUrl(current.code);
+      verifyLink.textContent = current.code;
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => drawCertificate(current));
     }
 
-    nameInput.value = window.HCStore.getProfile().name || '';
-
-    // Wait for web fonts so the canvas text uses the right typeface
-    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => render());
-
-    updateBtn?.addEventListener('click', () => render(true));
-    nameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') render(true);
-    });
-    HC.onPage(document, 'hc:profile-changed', () => {
-      nameInput.value = window.HCStore.getProfile().name || '';
-      render();
-    });
+    load();
+    // A different person logged in or out: start again
+    HC.onPage(document, 'hc:profile-changed', load);
 
     downloadBtn?.addEventListener('click', () => {
-      if (currentHours() === 0) {
-        window.showToast('No attended hours yet. A certificate is available after an organizer confirms your attendance.', 'error', 'fas fa-info-circle');
-        return;
-      }
-      render();
-      const safeName = (nameInput.value.trim() || 'Volunteer').replace(/[^a-z0-9]+/gi, '_');
+      if (!current) return;
+      drawCertificate(current);
+      const safeName = current.recipientName.replace(/[^a-z0-9]+/gi, '_');
       const link = document.createElement('a');
       link.download = `HopeConnect_Certificate_${safeName}.png`;
       link.href = canvas.toDataURL('image/png');

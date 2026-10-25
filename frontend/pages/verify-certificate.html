@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Verify Certificate — HopeConnect AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../assets/css/style.css?v=14">
+  <link rel="stylesheet" href="../assets/css/responsive.css?v=14">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="../index.html" class="brand-logo">
+        <div class="logo-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span>HopeConnect<span class="ai-badge">AI</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="ngos.html">Discover NGOs</a></li>
+        <li><a href="volunteer.html">Volunteer</a></li>
+        <li><a href="campaigns.html">Campaigns</a></li>
+        <li><a href="impact.html">Impact</a></li>
+        <li><a href="rewards.html">Rewards</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <div class="auth-area" id="authArea"></div>
+        <button class="mobile-menu-btn" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="verify-page">
+    <div class="verify-card" id="verifyCard" aria-live="polite">
+      <div class="verify-icon" id="verifyIcon"><i class="fas fa-spinner fa-spin"></i></div>
+      <h1 id="verifyTitle">Checking certificate...</h1>
+      <p id="verifyMessage">Please wait a moment.</p>
+      <div class="verify-actions" id="verifyActions"></div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <span>&copy; 2026 HopeConnect AI. All rights reserved.</span>
+        <span>Certificate verification</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (order matters: core first, then this page) -->
+  <script src="../assets/js/core/constants.js?v=14"></script>
+  <script src="../assets/js/core/app.js?v=14"></script>
+  <script src="../assets/js/core/store.js?v=14"></script>
+  <script src="../assets/js/core/auth.js?v=14"></script>
+  <script src="../assets/js/core/router.js?v=14"></script>
+  <script src="../assets/js/pages/verify-certificate.js?v=14"></script>
+</body>
+</html>

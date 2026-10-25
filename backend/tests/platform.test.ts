@@ -442,3 +442,70 @@ describe('nothing can be created or joined without logging in', () => {
     assert.equal(pledge.status, 403);
   });
 });
+
+describe('participation certificates (volunteers and donors only)', () => {
+  test('a volunteer gets one only after attendance is confirmed, and anyone can verify it', async () => {
+    const ngo = await verifiedNgo();
+    const driveId = (await ngo.c.post('/api/ngo/opportunities', DRIVE)).body.opportunity.id;
+    const volunteer = await account('volunteer', 'Neha Kulkarni');
+
+    assert.equal((await client().post('/api/me/certificate', {})).status, 401, 'login required');
+    const early = await volunteer.c.post('/api/me/certificate', {});
+    assert.equal(early.status, 409);
+    assert.equal(early.body.code, 'NOT_ELIGIBLE');
+
+    await volunteer.c.post(`/api/opportunities/${driveId}/registrations`, {});
+    assert.equal((await volunteer.c.post('/api/me/certificate', {})).status, 409, 'joined but not attended yet');
+
+    await OpportunityModel.updateOne({ _id: driveId }, { date: daysFromToday(-1) });
+    const regId = (await ngo.c.get('/api/ngo/console')).body.registrations[0].id;
+    await ngo.c.patch(`/api/ngo/registrations/${regId}`, { status: 'attended' });
+
+    const issued = await volunteer.c.post('/api/me/certificate', { hours: 999, recipientName: 'Someone Else' });
+    assert.equal(issued.status, 201, JSON.stringify(issued.body));
+    const cert = issued.body.certificate;
+    assert.equal(cert.hours, 4, 'hours come from the server, not the request');
+    assert.equal(cert.recipientName, 'Neha Kulkarni');
+    assert.match(cert.code, /^HC-[A-Z2-9]{5}-[A-Z2-9]{5}$/);
+
+    const again = await volunteer.c.post('/api/me/certificate', {});
+    assert.equal(again.status, 200);
+    assert.equal(again.body.certificate.code, cert.code, 'same code every time');
+
+    const check = await client().get(`/api/certificates/verify/${cert.code.toLowerCase()}`);
+    assert.equal(check.status, 200);
+    assert.equal(check.body.recipient, 'Neha Kulkarni');
+    assert.equal(check.body.hours, 4);
+    assert.equal(JSON.stringify(check.body).includes(volunteer.email), false, 'no email in the public check');
+  });
+
+  test('a donor gets one after a pledge; anonymous donors stay anonymous when verified', async () => {
+    const ngo = await verifiedNgo();
+    const campaign = (await ngo.c.post('/api/ngo/campaigns', {
+      title: 'Solar Lamps for Hostels', category: 'Education', goal: 50000, location: 'Pune',
+      endDate: daysFromToday(30).toISOString().slice(0, 10), description: 'Provide solar study lamps to 100 tribal hostel students near Pune.'
+    })).body.campaign;
+    const donor = await account('donor', 'Rohan Donor');
+    assert.equal((await donor.c.post('/api/me/certificate', {})).status, 409);
+
+    await donor.c.post(`/api/campaigns/${campaign.id}/pledges`, { amount: 2500 });
+    await donor.c.patch('/api/me/profile', { name: 'Rohan Donor', anonymous: true });
+    const cert = (await donor.c.post('/api/me/certificate', {})).body.certificate;
+    assert.equal(cert.kind, 'donor');
+    assert.equal(cert.amount, 2500);
+    assert.equal(cert.campaigns, 1);
+    assert.equal(cert.recipientName, 'Rohan Donor', 'the owner sees their own name');
+
+    const check = await client().get(`/api/certificates/verify/${cert.code}`);
+    assert.equal(check.body.recipient, 'Anonymous Donor');
+  });
+
+  test('NGO accounts cannot get one; bad or unknown codes are rejected', async () => {
+    const ngo = await verifiedNgo();
+    const res = await ngo.c.post('/api/me/certificate', {});
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'WRONG_ROLE');
+    assert.equal((await client().get('/api/certificates/verify/not-a-code')).status, 400);
+    assert.equal((await client().get('/api/certificates/verify/HC-AAAAA-BBBBB')).status, 404);
+  });
+});

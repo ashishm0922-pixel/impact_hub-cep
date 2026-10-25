@@ -3076,3 +3076,7 @@ section[tabindex="-1"]:focus {
 
 .nav-mobile-user { display: block; font-size: 0.9rem; font-weight: 600; color: var(--accent-green-hover); }
 a.auth-chip:hover { color: var(--accent-green-hover); }
+
+/* Participation certificate: status box, and make the hidden attribute win over display rules */
+.cert-status { max-width: 560px; margin: 0 auto; text-align: center; display: grid; gap: .75rem; justify-items: center; }
+.cert-status[hidden], .cert-preview-canvas-wrap[hidden], #certActions[hidden] { display: none; }

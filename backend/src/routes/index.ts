@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireDb } from '../middlewares/security';
 import { createAdminRoutes } from '../modules/admin/admin.routes';
 import { createAuthRoutes } from '../modules/auth/auth.routes';
+import { certificateRoutes } from '../modules/certificates/certificate.routes';
 import { contactRoutes } from '../modules/contact/contact.routes';
 import { healthRoutes } from '../modules/health/health.routes';
 import { adminDashboardRoutes } from '../modules/admin/admin-dashboard.routes';
@@ -28,6 +29,7 @@ export function createApiRouter(options: ApiOptions = {}) {
   api.use('/admin', adminDashboardRoutes);
   api.use('/ngo', ngoRoutes);
   api.use('/contact', contactRoutes);
+  api.use('/', certificateRoutes);
   api.use('/', participationRoutes); // /catalog, /me/*, /opportunities/:id/registrations, /campaigns/:id/pledges, /reports
 
   return api;

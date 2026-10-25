@@ -101,7 +101,7 @@ To really send emails with Gmail:
 | `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
 | `npm run seed` | Add sample NGOs, drives and campaigns (only if the database has no NGOs; also done automatically at start-up) |
-| `npm test` | 82 automated tests (uses a temporary in-memory MongoDB) |
+| `npm test` | 85 automated tests (uses a temporary in-memory MongoDB) |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` / `npm start` | Compile to `dist/` and run in production |
 
@@ -125,6 +125,8 @@ To really send emails with Gmail:
 | POST | `/api/opportunities/:id/registrations` | verified volunteer/donor | join a drive (uses the account's name/email/phone) |
 | POST | `/api/me/registrations/:id/cancel` | user | cancel my sign-up |
 | POST | `/api/campaigns/:id/pledges` | verified user | **demo** pledge, no money is charged |
+| POST | `/api/me/certificate` | verified volunteer/donor | issue/refresh my participation certificate from my real records (409 until eligible; NGOs get 403) |
+| GET | `/api/certificates/verify/:code` | anyone | public check: recipient ("Anonymous" if hidden), hours or amount, date; 30 per minute |
 | POST | `/api/reports` | user | flag an NGO, campaign or drive for admin review |
 | POST | `/api/contact` | anyone | contact message |
 | GET | `/api/ngo/console` | NGO | my organization, drives, campaigns, **participants** and supporters |

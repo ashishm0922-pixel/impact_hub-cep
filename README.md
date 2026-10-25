@@ -26,6 +26,7 @@ hopeconnect-ai/
 │   │   ├── rewards.html       ← public leaderboards, tiers and badges
 │   │   ├── admin.html         ← admin panel: users, verification status, suspend
 │   │   ├── verify-email.html  ← opened from the link in the verification email
+│   │   ├── verify-certificate.html ← public page: check a certificate ID
 │   │   ├── about.html
 │   │   └── contact.html       ← contact form + NGO registration
 │   └── assets/
@@ -45,7 +46,7 @@ hopeconnect-ai/
 │           │   └── certificate.js        ← canvas certificate (impact)
 │           └── pages/         ← one script per page
 │               ├── home.js, volunteer.js, campaigns.js, ngos.js
-│               ├── contact.js, impact.js, dashboard.js, rewards.js, admin.js, verify-email.js
+│               ├── contact.js, impact.js, dashboard.js, rewards.js, admin.js, verify-email.js, verify-certificate.js
 │
 ├── backend/                   ← API + serves the website: Express + TypeScript + MongoDB Atlas
 │   ├── src/
@@ -108,6 +109,7 @@ npm test
 | **Donor** | pledge ledger with receipt references, tier progress (by ₹ pledged), live progress of supported campaigns, profile & preferences (incl. "show me as Anonymous") |
 | **NGO** | register the organization (admin verifies it), then publish drives/campaigns, **see everyone who joined** (name, email, phone, skills), mark attendance, see supporters, download participants as CSV |
 | **Admin** (`/pages/admin.html`) | overview, NGO verification queue, users, audit logs (+CSV), leaderboard, flagged content |
+| **Certificate** | volunteers (after an NGO confirms attendance) and donors (after a pledge) can download a participation certificate on the Impact page; NGOs cannot. Anyone can check its ID at `pages/verify-certificate.html` |
 | **Visitor** | can browse everything, but **must log in to join a drive, donate, or create anything** |
 
 Public **Rewards** page (`pages/rewards.html`): Top Volunteers, Top Donors (names shown as "Firstname L.", anonymous users hidden) and the badge/tier rules.
