@@ -101,7 +101,7 @@ To really send emails with Gmail:
 | `npm run db:check` | Test the MongoDB connection in `.env` (shows database + collections) |
 | `npm run admin:create` | Create the admin from `.env` (`-- --reset` to change its password) |
 | `npm run seed` | Add sample NGOs, drives and campaigns (only if the database has no NGOs; also done automatically at start-up) |
-| `npm test` | 80 automated tests (uses a temporary in-memory MongoDB) |
+| `npm test` | 82 automated tests (uses a temporary in-memory MongoDB) |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` / `npm start` | Compile to `dist/` and run in production |
 

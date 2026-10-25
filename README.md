@@ -58,7 +58,7 @@ hopeconnect-ai/
 │   │   ├── modules/           ← one folder per feature: auth/ admin/ ngos/ opportunities/ ...
 │   │   ├── shared/ utils/     ← validation rules, password hashing, tokens
 │   │   └── scripts/           ← create-admin, seed, dev-local
-│   ├── tests/                 ← 80 auth/API tests (in-memory MongoDB)
+│   ├── tests/                 ← 82 auth/API tests (in-memory MongoDB)
 │   └── .env.example           ← copy to .env (MongoDB Atlas URI, admin login)
 │
 ├── docs/

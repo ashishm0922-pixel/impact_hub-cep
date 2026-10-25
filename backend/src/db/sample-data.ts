@@ -1,6 +1,6 @@
 /**
  * Sample NGOs, drives and campaigns so a brand-new database is not empty.
- * Inserted ONLY when the database has no NGOs yet (see seedSampleData).
+ * Added by seedSampleData() for any sample NGO that is missing (never duplicates).
  * Generated from the original frontend demo data. Dates are relative to today.
  */
 import { CampaignModel } from '../models/campaign.model';
@@ -15,7 +15,7 @@ const SAMPLE_NGOS = [
     category: "Environment",
     location: "Pune, Maharashtra",
     logoUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&auto=format&fit=crop&q=80",
-    bannerUrl: "https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80",
     description: "Dedicated to urban afforestation, organic farming advocacy, and community waste segregation across Western India.",
     foundedYear: 2017,
     website: "https://greenearth.example.org"
@@ -85,6 +85,116 @@ const SAMPLE_NGOS = [
     description: "Rapid response emergency disaster assistance, emergency flood relief kits, clean water supply, and rehabilitation.",
     foundedYear: 2014,
     website: "https://sahararelief.example.org"
+  },
+  {
+    key: "ngo-8",
+    name: "Ganga Saaf Trust",
+    category: "Environment",
+    location: "Varanasi, Uttar Pradesh",
+    logoUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80",
+    description: "Cleaning ghats and riverbanks, setting up waste-collection points and teaching boatmen and vendors about plastic-free livelihoods.",
+    foundedYear: 2016,
+    website: "https://gangasaaftrust.example.org"
+  },
+  {
+    key: "ngo-9",
+    name: "Vidya Jyoti Foundation",
+    category: "Education",
+    location: "Lucknow, Uttar Pradesh",
+    logoUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80",
+    description: "Running free evening classes, book libraries and exam-prep support for first-generation learners in city slums.",
+    foundedYear: 2014,
+    website: "https://vidyajyotifoundation.example.org"
+  },
+  {
+    key: "ngo-10",
+    name: "Arogya Seva Mission",
+    category: "Healthcare",
+    location: "Hyderabad, Telangana",
+    logoUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop&q=80",
+    description: "Organising free diabetes and blood-pressure screening camps and low-cost diagnostics for informal workers and their families.",
+    foundedYear: 2018,
+    website: "https://arogyasevamission.example.org"
+  },
+  {
+    key: "ngo-11",
+    name: "Street Paws Rescue",
+    category: "Animal Welfare",
+    location: "Chennai, Tamil Nadu",
+    logoUrl: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=600&auto=format&fit=crop&q=80",
+    description: "Rescuing, sterilising and vaccinating community dogs and cats, and finding loving adopters through weekend adoption drives.",
+    foundedYear: 2019,
+    website: "https://streetpawsrescue.example.org"
+  },
+  {
+    key: "ngo-12",
+    name: "Shakti Sewing Circle",
+    category: "Women Empowerment",
+    location: "Indore, Madhya Pradesh",
+    logoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
+    description: "Training women in tailoring and small-business skills, then helping them form cooperatives that sell to local boutiques.",
+    foundedYear: 2017,
+    website: "https://shaktisewingcircle.example.org"
+  },
+  {
+    key: "ngo-13",
+    name: "Little Steps Trust",
+    category: "Child Welfare",
+    location: "Patna, Bihar",
+    logoUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&auto=format&fit=crop&q=80",
+    description: "Running day-care and nutrition centres for children of migrant labourers, with health check-ups and school-enrolment help.",
+    foundedYear: 2015,
+    website: "https://littlestepstrust.example.org"
+  },
+  {
+    key: "ngo-14",
+    name: "Rapid Relief Network",
+    category: "Disaster Relief",
+    location: "Bhubaneswar, Odisha",
+    logoUrl: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=600&auto=format&fit=crop&q=80",
+    description: "A trained volunteer force that delivers food, clean water and shelter kits within 24 hours of cyclones and floods on the eastern coast.",
+    foundedYear: 2013,
+    website: "https://rapidreliefnetwork.example.org"
+  },
+  {
+    key: "ngo-15",
+    name: "Urban Green Roofs",
+    category: "Environment",
+    location: "Ahmedabad, Gujarat",
+    logoUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80",
+    description: "Turning bare city rooftops and school terraces into shaded vegetable gardens that cool buildings and feed neighbourhoods.",
+    foundedYear: 2020,
+    website: "https://urbangreenroofs.example.org"
+  },
+  {
+    key: "ngo-16",
+    name: "Digital Gurukul India",
+    category: "Education",
+    location: "Kochi, Kerala",
+    logoUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80",
+    description: "Bringing refurbished computers, coding clubs and English-speaking practice to government schools and coastal communities.",
+    foundedYear: 2021,
+    website: "https://digitalgurukulindia.example.org"
+  },
+  {
+    key: "ngo-17",
+    name: "Drishti Eye Care Foundation",
+    category: "Healthcare",
+    location: "Nagpur, Maharashtra",
+    logoUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=150&auto=format&fit=crop&q=80",
+    bannerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop&q=80",
+    description: "Free eye check-ups, spectacles and cataract surgeries for elderly people and schoolchildren in rural Vidarbha.",
+    foundedYear: 2012,
+    website: "https://drishtieyecarefoundation.example.org"
   }
 ];
 
@@ -307,40 +417,191 @@ const SAMPLE_CAMPAIGNS = [
     description: "Seed funding of ₹2,500 each to help women purchase sewing machines, dairy equipment, or organic seed kits.",
     featured: false,
     days: 30
+  },
+  {
+    ngo: "ngo-8",
+    title: "Plastic-Free Ghats: 20 Waste Collection Points",
+    category: "Environment",
+    location: "Varanasi, Uttar Pradesh",
+    raised: 41000,
+    goal: 80000,
+    supporters: 87,
+    imageUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80",
+    description: "Installing 20 covered collection points and paying local women to sort and recycle riverside waste every day.",
+    featured: false,
+    days: 21
+  },
+  {
+    ngo: "ngo-9",
+    title: "Evening Classes and Library for 300 Children",
+    category: "Education",
+    location: "Lucknow, Uttar Pradesh",
+    raised: 52500,
+    goal: 75000,
+    supporters: 118,
+    imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80",
+    description: "Setting up two learning rooms with books, desks and trained tutors so 300 children can study safely after school.",
+    featured: true,
+    days: 26
+  },
+  {
+    ngo: "ngo-10",
+    title: "Free Diabetes Screening Camps in 40 Colonies",
+    category: "Healthcare",
+    location: "Hyderabad, Telangana",
+    raised: 96000,
+    goal: 120000,
+    supporters: 204,
+    imageUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop&q=80",
+    description: "Mobile screening teams, test kits and follow-up consultations for informal workers who cannot afford a clinic visit.",
+    featured: true,
+    days: 12
+  },
+  {
+    ngo: "ngo-11",
+    title: "Vaccinate and Sterilise 500 Street Dogs",
+    category: "Animal Welfare",
+    location: "Chennai, Tamil Nadu",
+    raised: 33500,
+    goal: 60000,
+    supporters: 76,
+    imageUrl: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&auto=format&fit=crop&q=80",
+    description: "Paying for vets, anti-rabies vaccines and post-surgery care to keep Chennai neighbourhoods safe for people and animals.",
+    featured: false,
+    days: 19
+  },
+  {
+    ngo: "ngo-12",
+    title: "Sewing Machines for 40 Women Entrepreneurs",
+    category: "Women Empowerment",
+    location: "Indore, Madhya Pradesh",
+    raised: 64000,
+    goal: 100000,
+    supporters: 142,
+    imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+    description: "Each woman receives a machine, a fabric starter pack and three months of business mentoring to earn her own income.",
+    featured: false,
+    days: 28
+  },
+  {
+    ngo: "ngo-13",
+    title: "Nutritious Meals for 200 Migrant Children",
+    category: "Child Welfare",
+    location: "Patna, Bihar",
+    raised: 47000,
+    goal: 70000,
+    supporters: 133,
+    imageUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&auto=format&fit=crop&q=80",
+    description: "Daily hot meals, health check-ups and school-readiness classes at two day-care centres near construction sites.",
+    featured: true,
+    days: 15
+  },
+  {
+    ngo: "ngo-14",
+    title: "Cyclone Response Kits for 1,000 Families",
+    category: "Disaster Relief",
+    location: "Bhubaneswar, Odisha",
+    raised: 138000,
+    goal: 200000,
+    supporters: 261,
+    imageUrl: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=600&auto=format&fit=crop&q=80",
+    description: "Pre-packed kits with dry rations, water purifiers, tarpaulins and first-aid supplies, stored ahead of the cyclone season.",
+    featured: true,
+    days: 10
+  },
+  {
+    ngo: "ngo-15",
+    title: "Rooftop Vegetable Gardens for 25 Schools",
+    category: "Environment",
+    location: "Ahmedabad, Gujarat",
+    raised: 28500,
+    goal: 65000,
+    supporters: 69,
+    imageUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80",
+    description: "Building grow-beds and rain-water tanks on school terraces so children learn farming and take home fresh vegetables.",
+    featured: false,
+    days: 33
+  },
+  {
+    ngo: "ngo-16",
+    title: "Computer Lab for 5 Government Schools",
+    category: "Education",
+    location: "Kochi, Kerala",
+    raised: 71000,
+    goal: 90000,
+    supporters: 156,
+    imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80",
+    description: "Refurbished laptops, solar backup and trained volunteer teachers for coding clubs in five coastal schools.",
+    featured: false,
+    days: 17
+  },
+  {
+    ngo: "ngo-17",
+    title: "Free Cataract Surgeries for 150 Elders",
+    category: "Healthcare",
+    location: "Nagpur, Maharashtra",
+    raised: 105000,
+    goal: 135000,
+    supporters: 227,
+    imageUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop&q=80",
+    description: "Covers surgery, lens, medicines and transport so elderly villagers can see clearly again, at no cost to them.",
+    featured: true,
+    days: 14
   }
 ];
 
+const DEAD_BANNER = 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop&q=80';
+const WORKING_BANNER = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop&q=80';
+
 const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-/** Inserts the sample data if there are no NGOs at all. Returns true if it inserted anything. */
+/**
+ * Adds every sample NGO that is not in the database yet, together with ITS drives and campaigns.
+ * Safe to run on every start-up: NGOs that already exist (same slug or name) are skipped,
+ * so nothing is duplicated and real NGOs are never touched.
+ * Returns how many sample NGOs were added.
+ */
 export async function seedSampleData() {
-  if ((await NgoModel.estimatedDocumentCount()) > 0) return false;
+  // Repair: this banner image was removed from Unsplash, so databases created earlier have a dead link
+  await NgoModel.updateMany({ bannerUrl: DEAD_BANNER }, { bannerUrl: WORKING_BANNER });
 
+  const addedKeys = new Set<string>();
   const idByKey = new Map<string, unknown>();
+
   for (const { key, ...ngo } of SAMPLE_NGOS) {
+    const slug = slugify(ngo.name);
+    if (await NgoModel.exists({ $or: [{ slug }, { name: ngo.name }] })) continue;
     const doc = await NgoModel.create({
       ...ngo,
-      slug: slugify(ngo.name),
-      email: `contact@${slugify(ngo.name)}.example.org`,
+      slug,
+      email: `contact@${slug}.example.org`,
       status: 'verified',
       reviewedAt: new Date(),
       isSample: true
     });
     idByKey.set(key, doc._id);
+    addedKeys.add(key);
   }
 
-  await OpportunityModel.insertMany(
-    SAMPLE_OPPORTUNITIES.map(({ ngo, days, ...opp }) => ({ ...opp, ngo: idByKey.get(ngo), date: daysFromToday(days) }))
-  );
-  await CampaignModel.insertMany(
-    SAMPLE_CAMPAIGNS.map(({ ngo, days, raised, goal, supporters, ...c }) => ({
-      ...c,
-      ngo: idByKey.get(ngo),
-      goalPaise: goal * 100,
-      baselineRaisedPaise: raised * 100,
-      baselineSupporters: supporters,
-      endDate: daysFromToday(days)
-    }))
-  );
-  return true;
+  const newOpportunities = SAMPLE_OPPORTUNITIES.filter(o => addedKeys.has(o.ngo));
+  const newCampaigns = SAMPLE_CAMPAIGNS.filter(c => addedKeys.has(c.ngo));
+
+  if (newOpportunities.length) {
+    await OpportunityModel.insertMany(
+      newOpportunities.map(({ ngo, days, ...opp }) => ({ ...opp, ngo: idByKey.get(ngo), date: daysFromToday(days) }))
+    );
+  }
+  if (newCampaigns.length) {
+    await CampaignModel.insertMany(
+      newCampaigns.map(({ ngo, days, raised, goal, supporters, ...c }) => ({
+        ...c,
+        ngo: idByKey.get(ngo),
+        goalPaise: goal * 100,
+        baselineRaisedPaise: raised * 100,
+        baselineSupporters: supporters,
+        endDate: daysFromToday(days)
+      }))
+    );
+  }
+  return addedKeys.size;
 }

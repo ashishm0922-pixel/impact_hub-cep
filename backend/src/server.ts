@@ -36,7 +36,10 @@ export async function startServer(mongoUri = env.mongoUri) {
     await connectDb(mongoUri);
     console.log('Connected to MongoDB.');
     await ensureAdmin();
-    if (env.seedSampleData && (await seedSampleData())) console.log('Added sample NGOs, drives and campaigns (empty database).');
+    if (env.seedSampleData) {
+      const added = await seedSampleData();
+      if (added) console.log(`Added ${added} sample NGO(s) with their drives and campaigns.`);
+    }
   } else {
     console.warn('MONGODB_URI is not set: the website works, but login/sign-up will answer 503.');
   }

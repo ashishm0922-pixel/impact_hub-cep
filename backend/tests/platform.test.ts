@@ -4,6 +4,7 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import { env } from '../src/config/env';
 import { seedSampleData } from '../src/db/sample-data';
 import { AuditLogModel } from '../src/models/audit-log.model';
+import { NgoModel } from '../src/models/ngo.model';
 import { OpportunityModel } from '../src/models/opportunity.model';
 import { UserModel } from '../src/models/user.model';
 import { upsertAdmin } from '../src/modules/admin/admin.service';
@@ -72,15 +73,35 @@ async function verifiedNgo() {
 
 describe('public catalog', () => {
   test('sample data appears once in an empty database', async () => {
-    assert.equal(await seedSampleData(), true);
-    assert.equal(await seedSampleData(), false, 'second run adds nothing');
+    assert.equal(await seedSampleData(), 17);
+    assert.equal(await seedSampleData(), 0, 'second run adds nothing');
     const res = await client().get('/api/catalog');
     assert.equal(res.status, 200);
-    assert.equal(res.body.ngos.length, 7);
+    assert.equal(res.body.ngos.length, 17);
     assert.equal(res.body.opportunities.length, 7);
-    assert.equal(res.body.campaigns.length, 5);
+    assert.equal(res.body.campaigns.length, 15);
     assert.equal(typeof res.body.opportunities[0].date, 'string');
     assert.match(res.body.opportunities[0].date, /^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test('seeding never duplicates and never clashes with a real NGO that uses a sample name', async () => {
+    const real = await account('ngo', 'Real Lead');
+    const submit = await real.c.post('/api/ngo/organization', { ...ORG, name: 'Ganga Saaf Trust' });
+    assert.equal(submit.status, 201);
+    assert.equal(await seedSampleData(), 16, 'the 17 samples minus the one name already taken');
+    assert.equal(await seedSampleData(), 0);
+    const names = (await client().get('/api/catalog')).body.ngos.filter((n: any) => n.name === 'Ganga Saaf Trust');
+    assert.equal(names.length, 1, 'still only one NGO with that name');
+    assert.equal(names[0].verified, false, 'and it is still the real, pending one');
+  });
+
+  test('seeding repairs the dead banner link in databases created earlier', async () => {
+    await seedSampleData();
+    const dead = 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=600&auto=format&fit=crop&q=80';
+    await NgoModel.updateOne({ slug: 'green-earth-foundation' }, { bannerUrl: dead });
+    await seedSampleData();
+    const ngo = await NgoModel.findOne({ slug: 'green-earth-foundation' }).lean();
+    assert.notEqual(ngo!.bannerUrl, dead);
   });
 
   test('a pending NGO is listed as pending, and cannot publish drives', async () => {
@@ -253,7 +274,7 @@ describe('admin: verification queue, overview, flagged content, audit logs', () 
     assert.equal(res.status, 200);
     assert.equal(res.body.users.volunteers, 1);
     assert.equal(res.body.users.donors, 1);
-    assert.equal(res.body.ngos.verified, 7);
+    assert.equal(res.body.ngos.verified, 17);
     assert.ok(res.body.live.drives >= 1);
     assert.ok(res.body.audit.events >= 2);
   });
